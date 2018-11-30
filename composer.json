@@ -1,0 +1,15 @@
+{
+    "name" : "flagshipcompany/flagship-for-prestashop",
+    "description" : "FlagShip Courier Solutions module",
+    "homepage" : "https://github.com/flagshipcompany/flagship-for-prestashop",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "FlagShip Courier Solutions"
+        }
+    ],
+    "require": {
+        "flagshipcompany/flagship-api-sdk": "dev-master"
+    },
+    "type" : "prestashop-module"
+}
