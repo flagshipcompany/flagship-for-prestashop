@@ -34,12 +34,8 @@ if (!defined('_PS_VERSION_')) {
 
 
 //NO Tailing slashes please
-// define('SMARTSHIP_WEB_URL', 'https://smartship-ng.flagshipcompany.com/');
-// define('SMARTSHIP_API_URL', 'https://api.smartship.io/');
-
-//Remove for prod
-define('SMARTSHIP_API_URL', 'localhost:3002');
-define('SMARTSHIP_WEB_URL', 'http://localhost:3006');
+define('SMARTSHIP_WEB_URL', 'https://smartship-ng.flagshipcompany.com/');
+define('SMARTSHIP_API_URL', 'https://api.smartship.io/');
 
 class FlagshipShipping extends Module
 {
