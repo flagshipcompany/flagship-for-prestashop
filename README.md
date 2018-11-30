@@ -2,7 +2,7 @@
 
 PrestaShop module that allows you to ship with FlagShip.
 
-#Installation
+# Installation
 
 If you are downloading the module from github, unzip the archive and move the folder to @Prestashop/modules/.
 
@@ -16,3 +16,9 @@ Login to PrestaShop Admin.
 Navigate to Modules > Modules & Services.
 
 Under Selection, search for Flagship and click on install.
+
+# Usage
+
+Click on Configure next to the module. Set the API token
+
+Every order now gives you an option to ship with FlagShip
