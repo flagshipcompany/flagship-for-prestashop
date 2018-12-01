@@ -8,7 +8,10 @@ If you are downloading the module from github, unzip the archive and move the fo
 
 ````
 unzip flagship-for-prestashop.zip
-cp -r flagship-for-prestashop <PATH_TO_PRESTASHOP_INSTALLATION_DIR>/modules/
+mv flagship-for-prestashop flagshipshipping
+cp -r flagshipshipping <PATH_TO_PRESTASHOP_INSTALLATION_DIR>/modules/
+cd <PATH_TO_PRESTASHOP_INSTALLATION_DIR>/modules/flagshipshipping
+composer install
 ````
 
 Login to PrestaShop Admin.
