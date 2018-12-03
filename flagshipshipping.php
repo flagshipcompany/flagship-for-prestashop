@@ -56,7 +56,11 @@ class FlagshipShipping extends Module
         parent::__construct();
 
         $this->displayName = $this->l('FlagShip For PrestaShop');
-        $this->description = $this->l('Send your shipments with FlagShip now. Drop the hassle of figuring out the best prices. Get real time prices from major courier service providers. Your customers will never have to deal with a delayed delivery again. A happy customer is a happy You!');
+        $this->description = $this->l('Send your shipments with FlagShip now.');
+        $this->description .= $this->l('Drop the hassle of figuring out the best prices.');
+        $this->description .= $this->l(' Get real time prices from major courier service providers.');
+        $this->description .= $this->l('Your customers will never have to deal with a delayed delivery again.');
+        $this->description .= $this->l(' A happy customer is a happy You!');
         $this->registerHook('displayBackOfficeOrderActions');
         $this->confirmUninstall = $this->l('Are you sure you want to uninstall?');
 
@@ -258,31 +262,14 @@ class FlagshipShipping extends Module
     protected function isTokenValid(string $token) : bool
     {
 
-        $curl = curl_init();
-
-        curl_setopt_array($curl, array(
-
-          CURLOPT_URL => SMARTSHIP_API_URL."/ship/available_services",
-          CURLOPT_RETURNTRANSFER => true,
-          CURLOPT_ENCODING => "",
-          CURLOPT_MAXREDIRS => 10,
-          CURLOPT_TIMEOUT => 30,
-          CURLOPT_CUSTOMREQUEST => "GET",
-          CURLOPT_POSTFIELDS => "",
-          CURLOPT_HTTPHEADER => array(
-            "X-Smartship-Token:". $token
-          ),
-        ));
-
-        curl_exec($curl);
-
-        $httpCode = curl_getinfo($curl, CURLINFO_HTTP_CODE);
-        curl_close($curl);
-
-        if ($httpCode === 200 || $httpCode === 201) {
+        $flagship = new Flagship($token, SMARTSHIP_API_URL);
+        try {
+            $checkTokenRequest = $flagship->validateTokenRequest($token);
+            $checkTokenRequest->execute();
             return true;
+        } catch (Exception $e) {
+            return false;
         }
-        return false;
     }
 
     protected function getTotalWeight(array $products) : float
