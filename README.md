@@ -2,6 +2,10 @@
 
 PrestaShop module that allows you to ship with FlagShip.
 
+# Compatibility
+
+Compatible with PrestaShop 1.7.x
+
 # Installation
 
 If you are downloading the module from github, unzip the archive and move the folder to @Prestashop/modules/.
