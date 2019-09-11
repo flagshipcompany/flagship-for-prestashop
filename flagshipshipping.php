@@ -34,8 +34,9 @@ if (!defined('_PS_VERSION_')) {
 
 
 //NO Tailing slashes please
-define('SMARTSHIP_WEB_URL', 'https://smartship-ng.flagshipcompany.com/');
-define('SMARTSHIP_API_URL', 'https://api.smartship.io/');
+define('SMARTSHIP_WEB_URL', 'http://127.0.0.1:3006');
+define('SMARTSHIP_API_URL', 'http://127.0.0.1:3002');
+
 
 class FlagshipShipping extends Module
 {
@@ -67,6 +68,7 @@ class FlagshipShipping extends Module
         if (!Configuration::get('flagshipshipping')) {
             $this->warning = $this->l('No name provided');
         }
+
     }
 
     public function install()
@@ -105,9 +107,10 @@ class FlagshipShipping extends Module
     {
         $defaultLang = (int)Configuration::get('PS_LANG_DFEAULT');
         $fieldsForm = array();
+        $apiTokenStatus = Configuration::get('flagship_api_token') ? 'API Token already set' : 'Set API Token';
         $fieldsForm[0]['form'] = array(
           'legend' => array(
-            'title' => $this->l('Set API Token'),
+            'title' => $this->l($apiTokenStatus),
           ),
           'input' => array(
             array(
@@ -116,7 +119,8 @@ class FlagshipShipping extends Module
                 'name' => 'flagship_api_token',
                 'size' => 50,
                 'required' => true
-          )),
+          )
+        ),
           'submit' => array(
                 'title' => $this->l('Save'),
                 'class' => 'btn btn-primary pull-right'
@@ -151,8 +155,9 @@ class FlagshipShipping extends Module
             )
         );
 
+
         // Load current value
-        $helper->fields_value['flagship_api_token'] = Configuration::get('flagship_api_token');
+        $helper->fields_value['flagship_api_token'] = NULL;
 
         return $helper->generateForm($fieldsForm);
     }
@@ -191,7 +196,7 @@ class FlagshipShipping extends Module
     public function prepareShipment(string $token, int $orderId)
     {
         try {
-            $flagship = new Flagship($token, SMARTSHIP_API_URL);
+            $flagship = new Flagship($token, SMARTSHIP_API_URL,'Prestashop',_PS_VERSION_);
             $prepareShipment = $flagship->prepareShipmentRequest($this->createPayload($orderId));
             $prepareShipment = $prepareShipment->execute();
 
@@ -208,7 +213,7 @@ class FlagshipShipping extends Module
     public function updateShipment(string $token, int $orderId, int $shipmentId)
     {
         try {
-            $flagship = new Flagship($token, SMARTSHIP_API_URL);
+            $flagship = new Flagship($token, SMARTSHIP_API_URL,'Prestashop',_PS_VERSION_);
             $updateShipment = $flagship->editShipmentRequest($this->createPayload($orderId), $shipmentId);
             $updatedShipment = $updateShipment->execute();
             $updatedShipmentId = $updatedShipment->shipment->id;
@@ -262,7 +267,7 @@ class FlagshipShipping extends Module
     protected function isTokenValid(string $token) : bool
     {
 
-        $flagship = new Flagship($token, SMARTSHIP_API_URL);
+        $flagship = new Flagship($token, SMARTSHIP_API_URL,'Prestashop',_PS_VERSION_);
         try {
             $checkTokenRequest = $flagship->validateTokenRequest($token);
             $checkTokenRequest->execute();
