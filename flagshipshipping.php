@@ -34,8 +34,8 @@ if (!defined('_PS_VERSION_')) {
 
 
 //NO Tailing slashes please
-define('SMARTSHIP_WEB_URL', 'http://127.0.0.1:3006');
-define('SMARTSHIP_API_URL', 'http://127.0.0.1:3002');
+define('SMARTSHIP_WEB_URL', 'https://smartship-ng.flagshipcompany.com');
+define('SMARTSHIP_API_URL', 'http://api.smartship.io');
 
 
 class FlagshipShipping extends Module
