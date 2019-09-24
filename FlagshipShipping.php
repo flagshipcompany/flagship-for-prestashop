@@ -34,7 +34,7 @@ if (!defined('_PS_VERSION_')) {
 
 //NO Tailing slashes please
 define('SMARTSHIP_WEB_URL', 'https://smartship-ng.flagshipcompany.com');
-define('SMARTSHIP_API_URL', 'http://api.smartship.io');
+define('SMARTSHIP_API_URL', 'https://api.smartship.io');
 
 class FlagshipShipping extends CarrierModule
 {
@@ -404,8 +404,8 @@ class FlagshipShipping extends CarrierModule
     protected function postProcess() : string
     {
         $apiToken = empty(Tools::getValue('flagship_api_token')) ? Configuration::get('flagship_api_token') : Tools::getValue('flagship_api_token');
-        $fee = Tools::getValue('flagship_fee');
-        $markup = Tools::getValue('flagship_markup');
+        $fee = empty(Tools::getValue('flagship_fee')) ? 0 : Tools::getValue('flagship_fee');
+        $markup = empty(Tools::getValue('flagship_markup')) ? 0 : Tools::getValue('flagship_markup');
 
         if(is_string(Configuration::get('flagship_fee')) && is_string(Configuration::get('flagship_api_token')) && is_string(Configuration::get('flagship_markup'))){ //fields exist in db
 

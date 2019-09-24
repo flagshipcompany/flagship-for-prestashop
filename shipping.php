@@ -25,7 +25,7 @@
 */
 
 include dirname(__FILE__).'/../../config/config.inc.php';
-include dirname(__FILE__).'/flagshipshipping.php';
+include dirname(__FILE__).'/FlagshipShipping.php';
 
 $flagship = new FlagshipShipping();
 $id_order = Tools::getValue('order_id');
