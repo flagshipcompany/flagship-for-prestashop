@@ -296,18 +296,7 @@ class FlagshipShipping extends CarrierModule
             "phone"=> $addressTo->phone,
             "is_commercial"=>"false"
         );
-        $package = array(
-            "units" => $this->getWeightUnits(),
-            "type" => "package",
-            "items" => array(
-                array(
-                    "width"=>"1",
-                    "height"=>"1",
-                    "length"=>"1",
-                    "weight"=>$this->getTotalWeight($products)
-                )
-            )
-        );
+        $package = $this->getPackages($order);
         $options = array(
             "signature_required"=>false,
             "reference"=>"PrestaShop Order# ".$orderId
@@ -622,10 +611,11 @@ class FlagshipShipping extends CarrierModule
         return $payload;
     }
 
-    protected function getPackages() : array {
-        $products = Context::getContext()->cart->getProducts();
+    protected function getPackages($order = null) : array {
+        $products = is_null($order) ? Context::getContext()->cart->getProducts() : $order->getProducts();
         $packages = [];
         $items = [];
+
         foreach ($products as $product) {
 
             $items[] = [
@@ -633,7 +623,7 @@ class FlagshipShipping extends CarrierModule
                 "height" => $product["height"] == 0 ? 1 : $product["height"],
                 "length" => $product["depth"] == 0 ? 1 : $product["depth"],
                 "weight" => $product["weight"] == 0 ? 1 : $product["weight"],
-                "description"=>$product["name"]
+                "description"=>is_null($order) ? $product["name"] : $product["product_name"]
             ];
         }
         $packages = [
