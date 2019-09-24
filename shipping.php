@@ -32,7 +32,7 @@ $id_order = Tools::getValue('order_id');
 $action = Tools::getValue('action');
 $updateShipmentId = Tools::getValue('shipment_id');
 
-$apiToken = $flagship->getToken();
+$apiToken = Configuration::get('flagship_api_token');
 
 if ($action === 'update') {
     $update = $flagship->updateShipment($apiToken, $id_order, $updateShipmentId);
