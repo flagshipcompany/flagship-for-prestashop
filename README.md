@@ -34,6 +34,10 @@ Search for Flagship and click on install.
 # Usage
 
 Configure the module. Set API token, markup percentage and handling fee.
+![Image of Configuration](https://github.com/flagshipcompany/flagship-for-prestashop/blob/master/views/screenshots/configuration.png)
 
 Customer can select the shipping method.
+![Image of Rates](https://github.com/flagshipcompany/flagship-for-prestashop/blob/master/views/screenshots/rates.png)
+
 Admin gets an option to Send orders to FlagShip.
+![Image of Order](https://github.com/flagshipcompany/flagship-for-prestashop/blob/master/views/screenshots/order.png)
