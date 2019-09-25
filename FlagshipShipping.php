@@ -119,7 +119,7 @@ class FlagshipShipping extends CarrierModule
         }
 
         $this->context->smarty->assign('module_dir', $this->_path);
-
+        $output .= $this->context->smarty->fetch($this->local_path.'views/templates/admin/note.tpl');
         return $output.$this->renderForm();
     }
 

@@ -8,24 +8,32 @@ Compatible with PrestaShop 1.7.x
 
 # Installation
 
-If you are downloading the module from github, unzip the archive and move the folder to @Prestashop/modules/.
+## Composer
+
+````
+cd <PATH_TO_PRESTASHOP_INSTALLATION_DIR>/modules
+composer create-project flagshipcompany/flagship-for-prestashop FlagshipShipping
+````
+## Manual
+Download the module from github, unzip the archive and move it to @Prestashop/modules/.
 
 ````
 unzip flagship-for-prestashop.zip
-mv flagship-for-prestashop flagshipshipping
-cp -r flagshipshipping <PATH_TO_PRESTASHOP_INSTALLATION_DIR>/modules/
-cd <PATH_TO_PRESTASHOP_INSTALLATION_DIR>/modules/flagshipshipping
+mv flagship-for-prestashop FlagshipShipping
+cp -r FlagshipShipping <PATH_TO_PRESTASHOP_INSTALLATION_DIR>/modules/
+cd <PATH_TO_PRESTASHOP_INSTALLATION_DIR>/modules/FlagshipShipping
 composer install
 ````
 
 Login to PrestaShop Admin.
 
-Navigate to Modules > Modules & Services.
+Navigate to Modules > Module Catalog
 
-Under Selection, search for Flagship and click on install.
+Search for Flagship and click on install.
 
 # Usage
 
-Click on Configure next to the module. Set the API token
+Configure the module. Set API token, markup percentage and handling fee.
 
-Every order now gives you an option to ship with FlagShip
+Customer can select the shipping method.
+Admin gets an option to Send orders to FlagShip.
