@@ -36,14 +36,14 @@ if (!defined('_PS_VERSION_')) {
 define('SMARTSHIP_WEB_URL', 'https://smartship-ng.flagshipcompany.com');
 define('SMARTSHIP_API_URL', 'https://api.smartship.io');
 
-class FlagshipShipping extends CarrierModule
+class flagshipshipping extends CarrierModule
 {
-    protected $config_form = false;
     public $id_carrier;
+    protected $config_form = false;
 
     public function __construct()
     {
-        $this->name = 'FlagshipShipping';
+        $this->name = 'flagshipshipping';
         $this->tab = 'shipping_logistics';
         $this->version = '1.0.0';
         $this->author = 'FlagShip Courier Solutions';
@@ -67,7 +67,7 @@ class FlagshipShipping extends CarrierModule
 
         $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_);
 
-         $this->registerHook('displayBackOfficeOrderActions');
+        $this->registerHook('displayBackOfficeOrderActions');
     }
 
     /**
@@ -92,11 +92,28 @@ class FlagshipShipping extends CarrierModule
                 )
             ');
 
+        $tab = new Tab();
+        $tab->active = 1;
+        $tab->class_name = 'Adminflagshipshipping';
+        $tab->position = 3;
+        $tab->name = [];
+        foreach (Language::getLanguages(true) as $lang) {
+            $tab->name[$lang['id_lang']] = 'Convert FlagShip Shipments';
+        }
+        $tab->id_parent = (int) Tab::getIdFromClassName('SELL');
+        $tab->module = $this->name;
+        $tab->add();
+        $tab->save();
+
         return parent::install() ;
     }
 
     public function uninstall()
     {
+        $id_tab = (int) Tab::getIdFromClassName('Adminflagshipshipping');
+        $tab = new Tab($id_tab);
+        $tab->delete();
+
         Configuration::deleteByName('flagship_api_token');
         Configuration::deleteByName('flagship_fee');
         Configuration::deleteByName('flagship_markup');
@@ -114,6 +131,7 @@ class FlagshipShipping extends CarrierModule
          * If values have been submitted in the form, process.
          */
         $output = '';
+
         if (((bool)Tools::isSubmit('submit'.$this->name.'Module')) == true) {
             $output .= $this->postProcess();
         }
@@ -126,10 +144,13 @@ class FlagshipShipping extends CarrierModule
     public function hookDisplayBackOfficeOrderActions(array $params)
     {
         $id_order = $params["id_order"];
+        $link = new Link();
 
         $shipmentId = $this->getShipmentId($id_order);
         $shipmentFlag = is_null($shipmentId) ? 0 : $shipmentId;
+
         $this->context->smarty->assign(array(
+            'url' => $link->getAdminLink('adminflagshipshipping'),
             'shipmentFlag' => $shipmentFlag,
             'SMARTSHIP_WEB_URL' => SMARTSHIP_WEB_URL,
             'orderId' => $id_order,
@@ -138,16 +159,14 @@ class FlagshipShipping extends CarrierModule
         return $this->display(__FILE__, 'flagship.tpl');
     }
 
-    public function prepareShipment($token,$orderId){
+    public function prepareShipment(string $token,int $orderId){
          try {
             $flagship = new Flagship($token, SMARTSHIP_API_URL,'Prestashop',_PS_VERSION_);
             $prepareShipment = $flagship->prepareShipmentRequest($this->createPayload($orderId));
             $prepareShipment = $prepareShipment->execute();
             $shipmentId = $prepareShipment->shipment->id;
             $this->updateOrder($shipmentId, $orderId);
-            $link = "<a href='".SMARTSHIP_WEB_URL."/shipping/".$shipmentId."/convert'target='_blank'>";
-            $link .= $shipmentId."</a>";
-            return $this->displayConfirmation('FlagShip Shipment Id: '.$link);
+            return $this->displayConfirmation('FlagShip Shipment Prepared : '.$shipmentId);
         } catch (Exception $e) {
             return $this->displayError($e->getMessage());
         }
@@ -159,9 +178,8 @@ class FlagshipShipping extends CarrierModule
             $updateShipment = $flagship->editShipmentRequest($this->createPayload($orderId), $shipmentId);
             $updatedShipment = $updateShipment->execute();
             $updatedShipmentId = $updatedShipment->shipment->id;
-            $link = "<a href='".SMARTSHIP_WEB_URL."/shipping/".$updatedShipmentId."/convert'target='_blank'>";
-            $link .= $updatedShipmentId."</a>";
-            return $this->displayConfirmation('Updated! FlagShip Shipment Id: '.$link);
+
+            return $this->displayConfirmation('Updated! FlagShip Shipment ');
         } catch (Exception $e) {
             return $this->displayError($e->getMessage());
         }
@@ -220,7 +238,8 @@ class FlagshipShipping extends CarrierModule
         return true;
     }
 
-    public function hookActionValidateCustomerAddressForm(){
+    public function hookActionValidateCustomerAddressForm()
+    {
         unset(Context::getContext()->cookie->rates);
         unset(Context::getContext()->cookie->rate);
     }
@@ -252,7 +271,7 @@ class FlagshipShipping extends CarrierModule
         $helper->allow_employee_form_lang = Configuration::get('PS_BO_ALLOW_EMPLOYEE_FORM_LANG', 0);
 
         $helper->identifier = $this->identifier;
-        $helper->submit_action = 'submitFlagshipShippingModule';
+        $helper->submit_action = 'submitflagshipshippingModule';
         $helper->currentIndex = $this->context->link->getAdminLink('AdminModules', false)
             .'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name;
         $helper->token = Tools::getAdminTokenLite('AdminModules');
@@ -311,6 +330,7 @@ class FlagshipShipping extends CarrierModule
             'options' => $options,
             'payment' => $payment
         );
+
         return $payload;
     }
 
@@ -426,7 +446,8 @@ class FlagshipShipping extends CarrierModule
 
     }
 
-    protected function verifyToken($apiToken) : bool {
+    protected function verifyToken(string $apiToken) : bool
+    {
 
         if($this->isTokenValid($apiToken) && !$this->isCurrentTokenSame($apiToken)){
             Configuration::updateValue('flagship_api_token', $apiToken);
@@ -435,11 +456,12 @@ class FlagshipShipping extends CarrierModule
         return false;
     }
 
-    protected function setHandlingFee($fee) : int {
+    protected function setHandlingFee(string $fee) : int
+    {
         return Configuration::updateValue('flagship_fee', $fee);
     }
 
-    protected function setMarkup($markup) : int {
+    protected function setMarkup(string $markup) : int {
         return Configuration::updateValue('flagship_markup', $markup);
     }
 
@@ -473,7 +495,7 @@ class FlagshipShipping extends CarrierModule
         return true;
     }
 
-    protected function prepareRates($rates) : array {
+    protected function prepareRates(\Flagship\Shipping\Collections\RatesCollection $rates) : array {
         $ratesArray = [];
         foreach ($rates as $rate) {
             $ratesArray[] = [
@@ -484,14 +506,14 @@ class FlagshipShipping extends CarrierModule
         return $ratesArray;
     }
 
-    protected function getCourierImage($availableService, string $courier,string $img){
+    protected function getCourierImage(\Flagship\Shipping\Objects\Service $availableService, string $courier,string $img){
         if(stripos($availableService->getDescription(),$courier) === 0){
             return strtolower($courier);
         }
         return $img;
     }
 
-    protected function addCarrier($availableService)
+    protected function addCarrier(\Flagship\Shipping\Objects\Service $availableService)
     {
 
         $carrier = new Carrier();
@@ -528,7 +550,7 @@ class FlagshipShipping extends CarrierModule
         return false;
     }
 
-    protected function addGroups($carrier)
+    protected function addGroups(Carrier $carrier)
     {
         $groups_ids = array();
         $groups = Group::getGroups(Context::getContext()->language->id);
@@ -538,7 +560,7 @@ class FlagshipShipping extends CarrierModule
         $carrier->setGroups($groups_ids);
     }
 
-    protected function addRanges($carrier)
+    protected function addRanges(Carrier $carrier)
     {
         $range_price = new RangePrice();
         $range_price->id_carrier = $carrier->id;
@@ -553,7 +575,7 @@ class FlagshipShipping extends CarrierModule
         $range_weight->add();
     }
 
-    protected function addZones($carrier)
+    protected function addZones(Carrier $carrier)
     {
         $zones = Zone::getZones();
 
@@ -574,7 +596,7 @@ class FlagshipShipping extends CarrierModule
         return Db::getInstance()->executeS($sql)[0]['iso_code'];
     }
 
-    protected function getPayload($address) : array {
+    protected function getPayload(Address $address) : array {
 
         $from = [
             "city"=>Configuration::get('PS_SHOP_CITY'),

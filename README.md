@@ -12,16 +12,16 @@ Compatible with PrestaShop 1.7.x
 
 ````
 cd <PATH_TO_PRESTASHOP_INSTALLATION_DIR>/modules
-composer create-project flagshipcompany/flagship-for-prestashop FlagshipShipping
+composer create-project flagshipcompany/flagship-for-prestashop flagshipshipping
 ````
 ## Manual
 Download the module from github, unzip the archive and move it to @Prestashop/modules/.
 
 ````
 unzip flagship-for-prestashop.zip
-mv flagship-for-prestashop FlagshipShipping
-cp -r FlagshipShipping <PATH_TO_PRESTASHOP_INSTALLATION_DIR>/modules/
-cd <PATH_TO_PRESTASHOP_INSTALLATION_DIR>/modules/FlagshipShipping
+mv flagship-for-prestashop flagshipshipping
+cp -r flagshipshipping <PATH_TO_PRESTASHOP_INSTALLATION_DIR>/modules/
+cd <PATH_TO_PRESTASHOP_INSTALLATION_DIR>/modules/flagshipshipping
 composer install
 ````
 

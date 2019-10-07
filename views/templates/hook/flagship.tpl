@@ -29,11 +29,11 @@
 
 {if $shipmentFlag}
 	<a class="btn btn-default send_to_flagship" id="update_shipment">Update Shipment</a>
-	<span class="success">FlagShip Shipment: </span><a href="{$SMARTSHIP_WEB_URL|escape:'htmlall':'UTF-8'}/shipping/{$shipmentFlag|escape:'htmlall':'UTF-8'}/convert" target="_blank" class="shipmentLink">{$shipmentFlag}</a>
+	<span class="success">FlagShip Shipment: </span><a href="{$url}" target="_blank" class="shipmentLink">{$shipmentFlag}</a>
 {else}
 	<a href="#" class="btn btn-default send_to_flagship" id="send_to_flagship"><i class="icon-truck"></i>Send To FlagShip</a>
 {/if}
-<div class="response"><img src="{$base_url}img/loader.gif" alt="Loading..."id="loading-image"/>
+<div class="response"><img src="{$base_url}img/loader.gif" alt="Loading..." id="loading-image"/>
 </div>
 <script>
 	
