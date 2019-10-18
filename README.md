@@ -33,7 +33,7 @@ Search for Flagship and click on install.
 
 # Usage
 
-Configure the module. Set API token, markup percentage and handling fee.
+Configure the module. Set API token, markup percentage and handling fee. Add dimensions for shipping boxes here.
 
 ![Image of Configuration](https://github.com/flagshipcompany/flagship-for-prestashop/blob/master/views/screenshots/configuration.png)
 
