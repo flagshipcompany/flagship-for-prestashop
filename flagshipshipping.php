@@ -108,7 +108,7 @@ class flagshipshipping extends CarrierModule
 
         $tab = new Tab();
         $tab->active = 1;
-        $tab->class_name = 'Adminflagshipshipping';
+        $tab->class_name = 'AdminFlagshipShipping';
         $tab->position = 3;
         $tab->name = [];
         foreach (Language::getLanguages(true) as $lang) {
@@ -124,13 +124,14 @@ class flagshipshipping extends CarrierModule
 
     public function uninstall()
     {
-        $id_tab = (int) Tab::getIdFromClassName('Adminflagshipshipping');
+        $id_tab = (int) Tab::getIdFromClassName('AdminFlagshipShipping');
         $tab = new Tab($id_tab);
         $tab->delete();
 
         Configuration::deleteByName('flagship_api_token');
         Configuration::deleteByName('flagship_fee');
         Configuration::deleteByName('flagship_markup');
+        Configuration::deleteByName('flagship_residential');
 
         Db::getInstance()->execute('DROP TABLE `'._DB_PREFIX_.'flagship_shipping`');
         Db::getInstance()->execute('DROP TABLE `'._DB_PREFIX_.'flagship_boxes`');
@@ -174,7 +175,7 @@ class flagshipshipping extends CarrierModule
         $shipmentFlag = is_null($shipmentId) ? 0 : $shipmentId;
 
         $this->context->smarty->assign(array(
-            'url' => $link->getAdminLink('adminflagshipshipping'),
+            'url' => $link->getAdminLink('AdminFlagshipShipping'),
             'shipmentFlag' => $shipmentFlag,
             'SMARTSHIP_WEB_URL' => SMARTSHIP_WEB_URL,
             'orderId' => $id_order,
@@ -374,6 +375,7 @@ class flagshipshipping extends CarrierModule
         $products = $order->getProducts();
 
         $name = empty($addressTo->company) ? $addressTo->firstname : $addressTo->company;
+         $isCommercial = Configuration::get('flagship_residential') ? false : true;
         $to = [
             "name"=>$name,
             "attn"=>$addressTo->firstname,
@@ -384,7 +386,7 @@ class flagshipshipping extends CarrierModule
             "state"=>$this->getStateCode((int)$addressTo->id_state),
             "postal_code"=>$addressTo->postcode,
             "phone"=> $addressTo->phone,
-            "is_commercial"=>false
+            "is_commercial"=>$isCommercial
         ];
 
         $package = $this->getPackages($order);
@@ -461,7 +463,27 @@ class flagshipshipping extends CarrierModule
                         'type' => 'text',
                         'label' => $this->l('Flat Handling Fee'),
                         'name' => 'flagship_fee'
-                    ]
+                    ],
+                    [
+                        'col' => 4,
+                        'type' => 'select',
+                        'label' => $this->l('Residential Shipment'),
+                        'name' => 'flagship_residential',
+                        'options' => [
+                            'query' => [
+                                [
+                                    'key' => 0,
+                                    'name' => 'No'
+                                ],
+                                [
+                                    'key' => 1,
+                                    'name' => 'Yes'
+                                ]
+                            ],
+                            'id' => 'key',
+                            'name' => 'name',
+                        ]
+                    ],
                 ],
                 'submit' => [
                     'title' => $this->l('Save'),
@@ -533,6 +555,7 @@ class flagshipshipping extends CarrierModule
             'flagship_api_token' => '',
             'flagship_markup' => Configuration::get('flagship_markup'),
             'flagship_fee' => Configuration::get('flagship_fee'),
+            'flagship_residential' => Configuration::get('flagship_residential'),
             'flagship_box_model' => '',
             'flagship_box_length' => '',
             'flagship_box_width' => '',
@@ -550,15 +573,18 @@ class flagshipshipping extends CarrierModule
         $apiToken = empty(Tools::getValue('flagship_api_token')) ? Configuration::get('flagship_api_token') : Tools::getValue('flagship_api_token');
         $fee = empty(Tools::getValue('flagship_fee')) ? 0 : Tools::getValue('flagship_fee');
         $markup = empty(Tools::getValue('flagship_markup')) ? 0 : Tools::getValue('flagship_markup');
+        $residential = empty(Tools::getValue('flagship_residential')) ? 0 : Tools::getValue('flagship_residential');
 
         if(is_string(Configuration::get('flagship_fee')) && is_string(Configuration::get('flagship_api_token')) && is_string(Configuration::get('flagship_markup'))){ //fields exist in db
 
             $feeFlag = $fee != Configuration::get('flagship_fee') ? Configuration::updateValue('flagship_fee',$fee) : 0 ;
             $markupFlag = $markup != Configuration::get('flagship_markup') ? Configuration::updateValue('flagship_markup',$markup) : 0 ;
+            $residentialFlag = $residentialFlag != Configuration::get('flagship_residential') ? Configuration::updateValue('flagship_residential',$residential) : 0 ;
+
 
             $returnFlag = $apiToken != Configuration::get('flagship_api_token') ? ($this->isTokenValid($apiToken) ? Configuration::updateValue('flagship_api_token',$apiToken) : 0) : 0;
 
-            $returnValue = $returnFlag || ($feeFlag || $markupFlag) ? $this->displayConfirmation($this->l('Configuration Updated')) :  $this->displayWarning($this->l("Configuration unchanged"));
+            $returnValue = $returnFlag || ($feeFlag || $markupFlag || $residentialFlag) ? $this->displayConfirmation($this->l('Configuration Updated')) :  $this->displayWarning($this->l("Configuration unchanged"));
             return $returnValue;
         }
 
@@ -583,6 +609,15 @@ class flagshipshipping extends CarrierModule
 
     protected function insertBoxDetails() : string {
 
+        $length = Tools::getValue('flagship_box_length');
+        $width = Tools::getValue('flagship_box_width');
+        $height = Tools::getValue('flagship_box_height');
+
+        $girth = 2*$width + 2*$height;
+        if( $this->getWeightUnits() == 'imperial' && ($length + $girth > 165) || ($this->getWeightUnits() == 'metric' && $this->validateMetricDimensions($length,$width,$height) > 165) ){
+            return $this->displayWarning($this->l('Box too big'));
+        }
+
         $data = [
             "model" => Tools::getValue('flagship_box_model'),
             "length" => Tools::getValue('flagship_box_length'),
@@ -595,6 +630,18 @@ class flagshipshipping extends CarrierModule
         Db::getInstance()->insert('flagship_boxes',$data);
         return $this->displayConfirmation($this->l('Box added'));
     }
+
+
+    protected function validateMetricDimensions($length,$width,$height){
+        $length = $length/2.54;
+        $width = $width/2.54;
+        $height = $height/2.54;
+
+        $girth = 2*$width + 2*$height;
+
+        return $length + $girth;
+    }
+
 
     protected function verifyToken(string $apiToken) : bool
     {
@@ -765,7 +812,7 @@ class flagshipshipping extends CarrierModule
             "country"=>Country::getIsoById($address->id_country),
             "state"=>$this->getStateCode($address->id_state),
             "postal_code"=>$address->postcode,
-            "is_commercial"=>true
+            "is_commercial"=> Configuration::get('flagship_residential') ? false : true
         ];
         $packages = $this->getPackages();
 

@@ -2,7 +2,7 @@
 
 include _PS_MODULE_DIR_.'flagshipshipping/flagshipshipping.php';
 
-class AdminFlagshipshippingController extends ModuleAdminController {
+class AdminFlagshipShippingController extends ModuleAdminController {
 
 
     public function __construct()
@@ -25,5 +25,5 @@ class AdminFlagshipshippingController extends ModuleAdminController {
         $this->context->smarty->assign(array(
             'content' =>  $content,
         ));
-    } 
+    }
 }
