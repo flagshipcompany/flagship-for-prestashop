@@ -867,11 +867,13 @@ class flagshipshipping extends CarrierModule
         if(count($boxes) == 0){
             return [
                 'items' => [
-                    'length' => 1,
-                    'width' => 1,
-                    'height' => 1,
-                    'weight' => 1,
-                    'description' => 'Item 1'
+                    [
+                        'length' => 1,
+                        'width' => 1,
+                        'height' => 1,
+                        'weight' => 1,
+                        'description' => 'Item 1'
+                    ]
                 ],
                 "units" => $this->getWeightUnits(),
                 "type"  => "package",
@@ -888,7 +890,29 @@ class flagshipshipping extends CarrierModule
         ];
 
         $packings = $flagship->packingRequest($packingPayload)->execute();
-        $packedItems = [];
+        $packedItems = $this->getPackedItems();
+
+        $packages = [
+            "items" => $packedItems,
+            "units" => $this->getWeightUnits(),
+            "type"  => "package",
+            "content" => "goods"
+        ];
+error_log(json_encode($packages));
+        return $packages;
+    }
+
+    protected function getPackedItems($packings){
+        if($packings == NULL){
+            return [
+                'length' => 1,
+                'width' => 1,
+                'height' => 1,
+                'weight' => 1,
+                'description' => 'packed items' 
+            ];
+        }
+
         foreach ($packings as $packing) {
             $packedItems[] = [
                 'length' => $packing->getLength(),
@@ -899,14 +923,8 @@ class flagshipshipping extends CarrierModule
             ];
         }
 
-        $packages = [
-            "items" => $packedItems,
-            "units" => $this->getWeightUnits(),
-            "type"  => "package",
-            "content" => "goods"
-        ];
+        return $packedItems;
 
-        return $packages;
     }
 
     protected function getItemsByQty($product,$order,$items) : array {
