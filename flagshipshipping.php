@@ -898,7 +898,7 @@ class flagshipshipping extends CarrierModule
             "type"  => "package",
             "content" => "goods"
         ];
-error_log(json_encode($packages));
+
         return $packages;
     }
 
