@@ -135,6 +135,7 @@ class flagshipshipping extends CarrierModule
 
         Db::getInstance()->execute('DROP TABLE `'._DB_PREFIX_.'flagship_shipping`');
         Db::getInstance()->execute('DROP TABLE `'._DB_PREFIX_.'flagship_boxes`');
+        Db::getInstance()->execute('DELETE FROM `'._DB_PREFIX_.'carrier` WHERE `external_module_name` like "flagshipshipping" ');
         return parent::uninstall();
     }
 
