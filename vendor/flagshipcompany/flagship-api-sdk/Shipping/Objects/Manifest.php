@@ -24,28 +24,28 @@ class Manifest{
         return $this->manifest->id;
     }
 
-    public function getToDepotShipment() : ?Shipment {
+    public function getToDepotShipment()  {
         if(property_exists($this->manifest, 'to_depot_shipment')){
             return new Shipment($this->manifest->to_depot_shipment);
         }
         return NULL;
     }
 
-    public function getShipmentIds() : ?array {
+    public function getShipmentIds()  {
         if(property_exists($this->manifest, 'shipment_ids')){
             return $this->manifest->shipment_ids;
         }
         return NULL;
     }
 
-    public function getPriceByShipmentId(int $shipmentId) : ?Rate {
+    public function getPriceByShipmentId(int $shipmentId)  {
         if(property_exists($this->manifest, 'prices')){
             return new Rate($this->manifest->prices->$shipmentId);
         }
         return NULL;
     }
 
-    public function getAllPrices() : ?RatesCollection {
+    public function getAllPrices() {
         if(property_exists($this->manifest, 'prices')){
             $prices = new RatesCollection();
             $prices->importRates((array)$this->manifest->prices);
@@ -54,28 +54,28 @@ class Manifest{
         return NULL;
     }
 
-    public function getSubtotal() : ?float {
+    public function getSubtotal() {
         if(property_exists($this->manifest, 'totals')){
             return $this->manifest->totals->subtotal;
         }
         return NULL;
     }
 
-    public function getTotal() : ?float {
+    public function getTotal() {
         if(property_exists($this->manifest, 'totals')){
             return $this->manifest->totals->total;
         }
         return NULL;
     }
 
-    public function getTaxesDetails() : ?array {
+    public function getTaxesDetails()  {
         if(property_exists($this->manifest, 'totals')){
             return json_decode(json_encode($this->manifest->totals->taxes),TRUE);
         }
         return NULL;
-    } 
+    }
 
-    public function getTaxesTotal() : ?float {
+    public function getTaxesTotal()  {
         if(!property_exists($this->manifest, 'totals')){
             return NULL;
         }
@@ -87,14 +87,14 @@ class Manifest{
         return $total;
     }
 
-    public function getToDepotId() : ?int {
+    public function getToDepotId()  {
         if(property_exists($this->manifest, 'to_depot_id')){
             return $this->manifest->to_depot_id;
         }
         return NULL;
     }
 
-    public function getBolNumber() : ?int {
+    public function getBolNumber() {
         if(property_exists($this->manifest,'bol_number')){
             return $this->manifest->bol_number;
         }
@@ -102,21 +102,21 @@ class Manifest{
     }
 
     //returns regular labels
-    public function getShipmentsLabels() : ?string { 
+    public function getShipmentsLabels()  {
         if(property_exists($this->manifest, 'documents')){
             return property_exists($this->manifest->documents,'labels') ? $this->manifest->documents->labels->regular : $this->manifest->documents->regular_label;
         }
         return NULL;
     }
 
-    public function getShipmentsThermalLabels() : ?string { 
+    public function getShipmentsThermalLabels()  { 
         if(property_exists($this->manifest, 'documents')){
             return property_exists($this->manifest->documents,'labels') ? $this->manifest->documents->labels->thermal : $this->manifest->documents->thermal_label;
         }
         return NULL;
     }
 
-    public function getManifestSummary() : ?string { 
+    public function getManifestSummary()  { 
         if(property_exists($this->manifest, 'documents')){
             return property_exists($this->manifest->documents,'manifest') ? $this->manifest->documents->manifest : NULL;
         }
@@ -124,14 +124,14 @@ class Manifest{
     }
 
     //returns regular label
-    public function getToDepotLabel() : ?string { 
+    public function getToDepotLabel()  { 
         if(property_exists($this->manifest, 'documents')){
             return property_exists($this->manifest->documents,'to_depot') ? $this->manifest->documents->to_depot->regular : NULL;
         }
         return NULL;
     }
 
-    public function getToDepotThermalLabel() : ?string {
+    public function getToDepotThermalLabel()  {
         if(property_exists($this->manifest, 'documents')){
             return property_exists($this->manifest->documents, 'to_depot') ? $this->manifest->documents->to_depot->thermal : NULL;
         }

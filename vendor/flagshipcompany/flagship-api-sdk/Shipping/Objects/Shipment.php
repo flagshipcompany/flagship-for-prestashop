@@ -20,236 +20,237 @@ class Shipment{
         }
 
 
-        public function getTrackingNumber() : ?string {
+        public function getTrackingNumber()  {
             return property_exists($this->shipment, 'tracking_number') ? $this->shipment->tracking_number : NULL ;
         }
 
 
-        public function getStatus() : ?string {
+        public function getStatus()  {
             return property_exists($this->shipment, 'status') ? $this->shipment->status : NULL;
         }
 
 
-        public function getPickupId() : ?string {
+        public function getPickupId()  {
             return property_exists($this->shipment, 'pickup_id') ? $this->shipment->pickup_id : NULL ;
         }
 
 
-        public function getSenderCompany() : ?string {
+        public function getSenderCompany()  {
             return property_exists($this->shipment, 'from') ? $this->shipment->from->name : NULL ;
         }
 
 
-        public function getSenderName() : ?string {
+        public function getSenderName()  {
             return property_exists($this->shipment, 'from') ? $this->shipment->from->attn : NULL;
         }
 
 
-        public function getSenderAddress() : ?string {
+        public function getSenderAddress()  {
             return property_exists($this->shipment, 'from') ? $this->shipment->from->address : NULL;
         }
 
 
-        public function getSenderSuite() : ?string {
+        public function getSenderSuite()  {
             return property_exists($this->shipment, 'from') ? $this->shipment->from->suite : NULL;
         }
 
 
-        public function getSenderDepartment() : ?string {
+        public function getSenderDepartment()  {
 
             return property_exists($this->shipment, 'from') ? ((property_exists($this->shipment->from, 'department')) ? $this->shipment->from->department : NULL) : NULL;
         }
 
 
-        public function getSenderCity() : ?string {
+        public function getSenderCity()  {
             return property_exists($this->shipment, 'from') ? $this->shipment->from->city : NULL;
         }
 
 
-        public function getSenderCountry() : ?string {
+        public function getSenderCountry()  {
             return property_exists($this->shipment, 'from') ? $this->shipment->from->country : NULL;
         }
 
 
-        public function getSenderState() : ?string {
+        public function getSenderState()  {
             return property_exists($this->shipment, 'from') ? $this->shipment->from->state : NULL;
         }
 
 
-        public function getSenderPostalCode() : ?string {
+        public function getSenderPostalCode()  {
             return property_exists($this->shipment, 'from') ? $this->shipment->from->postal_code : NULL;
         }
 
 
-        public function getSenderPhone() : ?string {
+        public function getSenderPhone()  {
             return property_exists($this->shipment, 'from') ? $this->shipment->from->phone : NULL;
         }
 
 
-        public function getSenderPhoneExt() : ?string {
+        public function getSenderPhoneExt()  {
             return property_exists($this->shipment, 'from') ? $this->shipment->from->phone_ext : NULL;
         }
 
 
-        public function getSenderDetails() : ?array {
+        public function getSenderDetails()  {
 
             $sender = property_exists($this->shipment, 'from') ?json_decode(json_encode($this->shipment->from),TRUE) : NULL ;
             return $sender;
         }
 
 
-        public function getReceiverCompany() : ?string {
+        public function getReceiverCompany()  {
             return property_exists($this->shipment, 'to') ? $this->shipment->to->name : NULL;
         }
 
 
-        public function getReceiverName() : ?string {
+        public function getReceiverName()  {
             return property_exists($this->shipment, 'to') ? $this->shipment->to->attn : NULL;
         }
 
 
-        public function getReceiverAddress() : ?string {
+        public function getReceiverAddress()  {
             return property_exists($this->shipment, 'to') ? $this->shipment->to->address : NULL;
         }
 
 
-        public function getReceiverSuite() : ?string {
+        public function getReceiverSuite()  {
             return property_exists($this->shipment, 'to') ? $this->shipment->to->suite : NULL;
         }
 
 
-        public function getReceiverDepartment() : ?string {
+        public function getReceiverDepartment()  {
             return property_exists($this->shipment, 'to') ? (property_exists($this->shipment->to, 'department') ? $this->shipment->to->department  : NULL ) : NULL;
         }
 
 
-        public function IsReceiverCommercial() : ?bool {
+        public function IsReceiverCommercial()  {
             return property_exists($this->shipment, 'to') ? ($this->shipment->to->is_commercial ?  TRUE : FALSE) : NULL;
         }
 
 
-        public function getReceiverCity() : ?string {
+        public function getReceiverCity()  {
             return property_exists($this->shipment, 'to') ? $this->shipment->to->city : NULL;
         }
 
 
-        public function getReceiverCountry() : ?string {
+        public function getReceiverCountry()  {
             return property_exists($this->shipment, 'to') ? $this->shipment->to->country : NULL;
         }
 
 
-        public function getReceiverState() : ?string {
+        public function getReceiverState()  {
             return property_exists($this->shipment, 'to') ? $this->shipment->to->state : NULL;
         }
 
 
-        public function getReceiverPostalCode() : ?string {
+        public function getReceiverPostalCode()  {
             return property_exists($this->shipment, 'to') ? $this->shipment->to->postal_code : NULL;
         }
 
 
-        public function getReceiverPhone() : ?string {
+        public function getReceiverPhone()  {
             return property_exists($this->shipment, 'to') ? $this->shipment->to->phone : NULL;
         }
 
 
-        public function getReceiverPhoneExt() : ?string {
+        public function getReceiverPhoneExt()  {
             return property_exists($this->shipment, 'to') ? $this->shipment->to->phone_ext : NULL;
         }
 
 
-        public function getReceiverDetails() : ?array {
+        public function getReceiverDetails()  {
             $receiver = property_exists($this->shipment, 'to') ?json_decode(json_encode($this->shipment->to),TRUE) : NULL;
 
             return $receiver;
         }
 
-        public function getReference() : ?string {
+        public function getReference()  {
             return property_exists($this->shipment->options, 'reference') ? $this->shipment->options->reference : NULL ;
         }
 
 
-        public function getDriverInstructions() : ?string {
+        public function getDriverInstructions()  {
 
             return property_exists($this->shipment, 'options') ? (property_exists($this->shipment->options, 'driver_instructions') ? $this->shipment->options->driver_instructions : NULL) : NULL;
 
         }
 
-         public function isSignatureRequired() : ?bool {
+         public function isSignatureRequired()  {
              return property_exists($this->shipment, 'options') ? (property_exists($this->shipment->options, 'signature_required')? ($this->shipment->options->signature_required ? TRUE : FALSE) : NULL ) : NULL;
          }
 
 
-        public function getShippingDate() : ?string {
+        public function getShippingDate() {
             return property_exists($this->shipment, 'options') ? (property_exists($this->shipment->options, 'shipping_date') ?$this->shipment->options->shipping_date : NULL) : NULL ;
         }
 
 
-        public function getTrackingEmails() : ?string {
+        public function getTrackingEmails() {
             return property_exists($this->shipment, 'options') ? (property_exists($this->shipment->options, 'tracking_emails') ?  $this->shipment->options->tracking_emails : NULL) : NULL;
         }
 
 
-        public function getInsuranceValue() : ?float {
+        public function getInsuranceValue()
+         {
             return property_exists($this->shipment, 'options') ? (property_exists($this->shipment->options, 'insurance') ? $this->shipment->options->insurance->value : NULL) : NULL;
         }
 
-        public function getInsuranceDescription() : ?string {
+        public function getInsuranceDescription() {
             return property_exists($this->shipment, 'options') ? (property_exists($this->shipment->options, 'insurance') ? $this->shipment->options->insurance->description : NULL) : NULL;
         }
 
 
-        public function getCodMethod() : ?string {
+        public function getCodMethod() {
             return property_exists($this->shipment, 'options') ? (property_exists($this->shipment->options, 'cod') ? $this->shipment->options->cod->method :NULL) : NULL;
         }
 
 
-        public function getCodPayableTo() : ?string {
+        public function getCodPayableTo() {
             return property_exists($this->shipment, 'options') ? (property_exists($this->shipment->options, 'cod') ? $this->shipment->options->cod->payable_to :NULL) : NULL ;
         }
 
 
-        public function getCodReceiverPhone() : ?string {
+        public function getCodReceiverPhone() {
             return property_exists($this->shipment, 'options') ? (property_exists($this->shipment->options, 'cod') ? $this->shipment->options->cod->receiver_phone :NULL) : NULL;
         }
 
 
-        public function getCodAmount() : ?float {
+        public function getCodAmount()  {
             return property_exists($this->shipment, 'options') ? (property_exists($this->shipment->options, 'cod') ? $this->shipment->options->cod->amount :NULL) : NULL;
         }
 
 
-        public function getCodCurrency() : ?string {
+        public function getCodCurrency() {
             return property_exists($this->shipment, 'options') ? (property_exists($this->shipment->options, 'cod') ? $this->shipment->options->cod->currency :NULL) : NULL;
         }
 
 
-        public function IsSaturdayDelivery() : ?bool {
+        public function IsSaturdayDelivery()  {
             return property_exists($this->shipment, 'options') ? (property_exists($this->shipment->options, 'saturday_delivery') ? ( $this->shipment->options->saturday_delivery ? TRUE : FALSE ) : NULL ) : NULL;
         }
 
 
-        public function getCourierCode() : ?string {
+        public function getCourierCode() {
             return $this->shipment->service->courier_code;
         }
 
-        public function getCourierDescription() : ?string {
+        public function getCourierDescription() {
             return $this->shipment->service->courier_desc;
         }
 
-        public function getCourierName() : ?string {
+        public function getCourierName() {
             return $this->shipment->service->courier_name;
         }
 
-        public function getEstimatedDeliveryDate() : ?string {
+        public function getEstimatedDeliveryDate() {
             return $this->shipment->service->estimated_delivery_date;
         }
 
-        public function getPackages() : Package{
+        public function getPackages() {
             return new Package(json_decode(json_encode($this->shipment->packages),TRUE));
         }
 
-        public function getPackageContent() : ?string {
+        public function getPackageContent() {
             if(is_array($this->shipment->packages)){
                 return NULL;
             }
@@ -257,7 +258,7 @@ class Shipment{
         }
 
 
-        public function getPackageUnits() : ?string {
+        public function getPackageUnits() {
             if(is_array($this->shipment->packages)){
                 return NULL;
             }
@@ -265,7 +266,7 @@ class Shipment{
         }
 
 
-        public function getPackageType() : ?string {
+        public function getPackageType() {
             if(is_array($this->shipment->packages)){
                 return NULL;
             }
@@ -286,7 +287,8 @@ class Shipment{
         }
 
 
-        public function getSubtotal() : ?float {
+        public function getSubtotal()
+         {
             if(property_exists($this->shipment, 'subtotal')){
                 return $this->shipment->subtotal;
             }
@@ -298,7 +300,8 @@ class Shipment{
         }
 
 
-        public function getTotal() : ?float {
+        public function getTotal()
+         {
             if(property_exists($this->shipment, 'total')){
                 return $this->shipment->total;
             }
@@ -310,7 +313,7 @@ class Shipment{
         }
 
 
-        public function getTaxesDetails() : ?array {
+        public function getTaxesDetails() {
             if(property_exists($this->shipment, 'taxes')){
                 return json_decode(json_encode($this->shipment->taxes),TRUE);
             }
@@ -321,7 +324,7 @@ class Shipment{
             return NULL;
         }
 
-        public function getTaxesTotal() : float {
+        public function getTaxesTotal()  {
                 $sum = 0.00;
                 $taxes = property_exists($this->shipment, 'taxes') ? $this->shipment->taxes : $this->shipment->price->taxes;
 
@@ -337,56 +340,56 @@ class Shipment{
                 return $sum;
         }
 
-        public function getCharges() : ?array{
+        public function getCharges() {
             return json_decode(json_encode($this->shipment->price->charges),TRUE);
         }
 
-        public function getAdjustments() : ?array{
+        public function getAdjustments() {
             $adjustments = property_exists($this->shipment, 'adjustments') ? $this->shipment->adjustments : $this->shipment->price->adjustments;
             return $adjustments;
         }
 
-        public function getDebits() : ?array{
+        public function getDebits() {
             $debits = property_exists($this->shipment, 'debits') ? $this->shipment->debits : $this->shipment->price->debits;
             return $debits;
         }
 
 
-    public function getLabel() : ?string {
+    public function getLabel() {
 
         $label =  property_exists($this->shipment, 'documents') ? $this->shipment->documents->regular_label : NULL;
         $label = property_exists($this->shipment, 'labels') ? $this->shipment->labels->regular : $label;
         return $label;
     }
 
-    public function getThermalLabel() : ?string {
+    public function getThermalLabel() {
 
         $thermalLabel =  property_exists($this->shipment, 'documents') ? $this->shipment->documents->thermal_label : NULL;
         $thermalLabel = property_exists($this->shipment, 'labels') ? $this->shipment->labels->thermal : $thermalLabel;
         return $thermalLabel;
     }
 
-    public function getCommercialInvoice() : ?string {
+    public function getCommercialInvoice()  {
 
         return property_exists($this->shipment, 'documents') ? ( property_exists($this->shipment->documents, 'commercial_invoice') ? $this->shipment->documents->commercial_invoice : NULL) : NULL;
     }
 
-    public function getTransitDetails() : ?array {
+    public function getTransitDetails()  {
 
         return property_exists($this->shipment,'transit_details') ? $this->shipment->transit_details : NULL;
     }
 
-    public function isDocumentsOnly() : ?bool {
+    public function isDocumentsOnly()  {
 
             return property_exists($this->shipment, 'documents_only') ? ($this->shipment->documents_only ? TRUE : FALSE ) : NULL;
         }
 
 
-    public function getFlagshipCode() : ?string {
+    public function getFlagshipCode() {
         return property_exists($this->shipment->service,'flagship_code') ?$this->shipment->service->flagship_code : NULL;
     }
 
-    public function getTransitTime() : ?string {
+    public function getTransitTime() {
         return property_exists($this->shipment->service, 'transit_time') ? $this->shipment->service->transit_time : NULL ;
     }
 

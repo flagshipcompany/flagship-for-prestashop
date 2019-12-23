@@ -33,17 +33,17 @@ class Rate
         return $total;
     }
 
-    public function getAdjustments() : ?string
+    public function getAdjustments()
     {
         return property_exists($this->rate,'price') ? $this->rate->price->adjustments : '';
     }
 
-    public function getDebits() : ?string
+    public function getDebits()
     {
         return property_exists($this->rate,'price') ? $this->rate->price->debits : '';
     }
 
-    public function getBrokerage() : ?string
+    public function getBrokerage() 
     {
         return property_exists($this->rate,'price') ? $this->rate->price->brokerage : '';
     }

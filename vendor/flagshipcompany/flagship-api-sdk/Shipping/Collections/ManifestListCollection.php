@@ -21,7 +21,7 @@ class ManifestListCollection extends Collection{
         return $allManifests;
     }
 
-    public function getByStatus(string $status) : ?ManifestListCollection {
+    public function getByStatus(string $status) {
         if(strcasecmp($status,'prequoted') != 0 && strcasecmp($status,'confirmed') != 0 && strcasecmp($status,'cancelled') != 0 ){
             return NULL;
         }

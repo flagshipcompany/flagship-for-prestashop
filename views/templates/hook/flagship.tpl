@@ -20,7 +20,7 @@
 *  @author FlagShip Courier Solutions <support@flagshipcompany.com>
 *  @copyright  FlagShip Courier Solutions
 *  @license    https://opensource.org/licenses/MIT
-*  
+*
 *}
 <script type="text/javascript">
 	var orderId = "{$orderId|escape:'htmlall':'UTF-8'}";
@@ -29,14 +29,14 @@
 
 {if $shipmentFlag}
 	<a class="btn btn-default send_to_flagship" id="update_shipment">Update Shipment</a>
-	<span class="success">FlagShip Shipment: </span><a href="{$url}" target="_blank" class="shipmentLink">{$shipmentFlag}</a>
+	<span class="success">FlagShip Shipment: </span><a href="{$url|escape:'htmlall':'UTF-8'}" target="_blank" class="shipmentLink">{$shipmentFlag|escape:'htmlall':'UTF-8'}</a>
 {else}
 	<a href="#" class="btn btn-default send_to_flagship" id="send_to_flagship"><i class="icon-truck"></i>Send To FlagShip</a>
 {/if}
-<div class="response"><img src="{$base_url}img/loader.gif" alt="Loading..." id="loading-image"/>
+<div class="response"><img src="{$base_url|escape:'htmlall':'UTF-8'}img/loader.gif" alt="Loading..." id="loading-image"/>
 </div>
 <script>
-	
+
 	var url = "{$module_dir|escape:'htmlall':'UTF-8'}shipping.php";
 	var action = 'prepare';
 	var msg = 'FlagShip Shipment: ';
@@ -54,9 +54,9 @@
 			if($(this).attr('id') == 'update_shipment'){
 				action = 'update';
 			}
-	
+
 			e.preventDefault();
-			
+
 			$.ajax({
 			  url : url,
 			  type : 'POST',
@@ -65,7 +65,7 @@
 			  	shipment_id : shipmentId,
 			  	action : action
 			  },
-			  	
+
 			  success : function(response){
 			  	$(".response").html(response);
 			  	$("#send_to_flagship").hide();

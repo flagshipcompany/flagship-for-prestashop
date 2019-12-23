@@ -4,7 +4,7 @@ namespace Flagship\Shipping\Objects;
 
 class TrackShipment {
 
-    public function __construct(?\stdClass $trackShipment){
+    public function __construct($trackShipment){
         $this->trackShipment = $trackShipment;
     }
 

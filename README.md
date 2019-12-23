@@ -4,21 +4,25 @@ PrestaShop module that allows you to ship with FlagShip.
 
 # Compatibility
 
-Compatible with PrestaShop 1.7.6.x
+Compatible with PrestaShop 1.7.x
 
 # Installation
 
+## Composer
+
+````
+cd <PATH_TO_PRESTASHOP_INSTALLATION_DIR>/modules
+composer create-project flagshipcompany/flagship-for-prestashop flagshipshipping
+````
 ## Manual
 Download the module from github, unzip the archive and move it to @Prestashop/modules/.
-
-Copy all downloaded files (expect license and readme.md) to a folder called flagshipshipping.
-Place this folder under Prestashop_Root/modules/
 
 ````
 unzip flagship-for-prestashop.zip
 mv flagship-for-prestashop flagshipshipping
 cp -r flagshipshipping <PATH_TO_PRESTASHOP_INSTALLATION_DIR>/modules/
 cd <PATH_TO_PRESTASHOP_INSTALLATION_DIR>/modules/flagshipshipping
+composer install
 ````
 
 Login to PrestaShop Admin.

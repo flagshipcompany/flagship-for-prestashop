@@ -8,8 +8,5 @@
             "name": "FlagShip Courier Solutions"
         }
     ],
-    "require": {
-        "flagshipcompany/flagship-api-sdk": "^1.1"
-    },
     "type" : "prestashop-module"
 }

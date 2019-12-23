@@ -11,7 +11,7 @@ class Pickup{
         return $this->pickup->id;
     }
 
-    public function getConfirmation() : ?string {
+    public function getConfirmation() {
         return property_exists($this->pickup,'confirmation') ? $this->pickup->confirmation : NULL ;
     }
 
@@ -58,7 +58,7 @@ class Pickup{
         return property_exists($this->pickup,'address') ? (is_null($this->pickup->address->ext) ? '' : $this->pickup->address->ext) : '';
     }
 
-    public function isAddressCommercial() : ?bool {
+    public function isAddressCommercial() {
         return property_exists($this->pickup,'address') ? ($this->pickup->address->is_commercial ? TRUE : FALSE) : NULL;
     }
 
@@ -74,15 +74,15 @@ class Pickup{
         return property_exists($this->pickup,'boxes') ? $this->pickup->boxes : '';
     }
 
-    public function getWeight() : ?string {
+    public function getWeight()  {
         return $this->pickup->weight;
     }
 
-    public function getPickupLocation() : ?string {
+    public function getPickupLocation()  {
         return $this->pickup->location;
     }
 
-    public function getDate() : ?string {
+    public function getDate()  {
         return is_null($this->pickup->date) ? NULL : $this->pickup->date;
     }
 
@@ -98,7 +98,7 @@ class Pickup{
         return $this->pickup->to_country;
     }
 
-    public function getInstructions() : ?string {
+    public function getInstructions()  {
         return is_null($this->pickup->instruction) ? NULL : $this->pickup->instruction ;
     }
 
