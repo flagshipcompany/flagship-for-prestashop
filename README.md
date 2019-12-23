@@ -8,6 +8,14 @@ Compatible with PrestaShop 1.7.x
 
 # Installation
 
+## Module Upload
+
+Login to PrestaShop Admin
+
+Modules > Module Manager > Upload a module (top right)
+
+Upload flagship-for-prestashop.zip provided above
+
 ## Composer
 
 ````
