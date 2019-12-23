@@ -24,11 +24,11 @@
  *  International Registered Trademark & Property of PrestaShop SA
  */
 
-    include dirname(__FILE__).'/../../config/config.inc.php';
-    include dirname(__FILE__).'/flagshipshipping.php';
+include dirname(__FILE__).'/../../config/config.inc.php';
+include dirname(__FILE__).'/flagshipshipping.php';
 
-    $id = Tools::getValue('box_id');
-    Db::getInstance()->execute("Delete from "._DB_PREFIX_."flagship_boxes where id = ".$id);
-    $flagshipShipping = new FlagshipShipping();
-    echo '<div class="alert alert-success alert-dismissible">Box deleted.</div>'.$flagshipShipping->getBoxesString();
-    return 0;
+$id = Tools::getValue('box_id');
+Db::getInstance()->execute("Delete from "._DB_PREFIX_."flagship_boxes where id = ".$id);
+$flagshipShipping = new FlagshipShipping();
+echo '<div class="alert alert-success alert-dismissible">Box deleted.</div>'.$flagshipShipping->getBoxesString();
+return 0;
