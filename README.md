@@ -1,6 +1,6 @@
 # flagship-for-prestashop
 
-PrestaShop module that allows you to ship with FlagShip.
+PrestaShop module that allows you to ship with FlagShip. We strongly recommend you to use the latest version of PrestaShop.
 
 # Compatibility
 
