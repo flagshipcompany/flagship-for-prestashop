@@ -33,14 +33,17 @@ if (file_exists(__DIR__ . '/vendor/autoload.php')) {
 
 use Flagship\Shipping\Flagship;
 
+
 //NO Tailing slashes please
 define('SMARTSHIP_WEB_URL', 'https://smartship-ng.flagshipcompany.com');
 define('SMARTSHIP_API_URL', 'https://api.smartship.io');
+define('TEST_API_URL','https://test-api.smartship.io');
 
 class FlagshipShipping extends CarrierModule
 {
     public $id_carrier;
     protected $config_form = false;
+
 
     public function __construct()
     {
@@ -133,9 +136,11 @@ class FlagshipShipping extends CarrierModule
         Configuration::deleteByName('flagship_fee');
         Configuration::deleteByName('flagship_markup');
         Configuration::deleteByName('flagship_residential');
+        Configuration::deleteByName('flagship_test_env');
 
         Db::getInstance()->execute('DROP TABLE `'._DB_PREFIX_.'flagship_shipping`');
         Db::getInstance()->execute('DROP TABLE `'._DB_PREFIX_.'flagship_boxes`');
+        Db::getInstance()->execute('DELETE FROM `'._DB_PREFIX_.'carrier` WHERE external_module_name = "flagshipshipping"');
         return parent::uninstall();
     }
 
@@ -187,8 +192,10 @@ class FlagshipShipping extends CarrierModule
 
     public function prepareShipment(string $token, int $orderId) : string
     {
+        $url = $this->getBaseUrl();
+
         try {
-            $flagship = new Flagship($token, SMARTSHIP_API_URL, 'Prestashop', _PS_VERSION_);
+            $flagship = new Flagship($token, $url, 'Prestashop', _PS_VERSION_);
             $prepareShipment = $flagship->prepareShipmentRequest($this->getPayloadForShipment($orderId));
             $prepareShipment = $prepareShipment->execute();
             $shipmentId = $prepareShipment->shipment->id;
@@ -201,8 +208,9 @@ class FlagshipShipping extends CarrierModule
 
     public function updateShipment(string $token, int $orderId, int $shipmentId) : string
     {
+        $url = $this->getBaseUrl();
         try {
-            $flagship = new Flagship($token, SMARTSHIP_API_URL, 'Prestashop', _PS_VERSION_);
+            $flagship = new Flagship($token, $url, 'Prestashop', _PS_VERSION_);
             $updateShipment = $flagship->editShipmentRequest($this->getPayloadForShipment($orderId), $shipmentId);
             $updatedShipment = $updateShipment->execute();
             $updatedShipmentId = $updatedShipment->shipment->id;
@@ -221,39 +229,55 @@ class FlagshipShipping extends CarrierModule
         }
         $carrier = new Carrier($this->id_carrier);
         if (isset(Context::getContext()->cookie->rates)) {
-            $couriers = [];
+
             $rate = explode(",", Context::getContext()->cookie->rate);
-            foreach ($rate as $value) {
-                $couriers[] = Tools::substr($value, 0, strpos($value, "-"));
-            }
-            if (!in_array($carrier->name, $couriers)) {
-                return false;
-            }
-            foreach ($rate as $value) {
-                $cost = floatVal(Tools::substr($value, strpos($value, "-")+1));
-                $cost += floatVal((Configuration::get("flagship_markup")/100) * $cost);
-                $cost += floatVal(Configuration::get('flagship_fee'));
-                $shipping_cost=Tools::substr($value, 0, strpos($value, "-")) == $carrier->name ? $cost : $shipping_cost;
-            }
-            return $shipping_cost;
+            $couriers = $this->getCouriers($rate);
+            return !in_array($carrier->name, $couriers) ? false : $this->getShippingCost($rate,$carrier);
         }
 
         $token = Configuration::get('flagship_api_token');
-        $flagship = new Flagship($token, SMARTSHIP_API_URL, 'Prestashop', _PS_VERSION_);
+        $url = $this->getBaseUrl();
+        $flagship = new Flagship($token, $url, 'Prestashop', _PS_VERSION_);
         $payload = $this->getPayload($address);
 
         if (!isset(Context::getContext()->cookie->rates)) {
             $rates = $flagship->createQuoteRequest($payload)->execute()->sortByPrice();
             Context::getContext()->cookie->rates = 1;
             $ratesArray = $this->prepareRates($rates);
-            $str = '';
-            foreach ($ratesArray as $value) {
-                $str .= implode("-", $value).",";
-            }
-            $str = rtrim($str);
+            $str = $this->getRatesString($ratesArray);
             Context::getContext()->cookie->rate = $str;
         }
         return $shipping_cost;
+    }
+
+    protected function getRatesString(array $ratesArray) : string
+    {
+        $str = '';
+        foreach ($ratesArray as $value) {
+            $str .= implode("-", $value).",";
+        }
+        $str = rtrim($str);
+        return $str;
+    }
+
+    protected function getShippingCost(array $rate,Carrier $carrier) : float
+    {
+        $shipping_cost = 0.00;
+        foreach ($rate as $value) {
+            $cost = floatVal(Tools::substr($value, strpos($value, "-")+1));
+            $cost += floatVal((Configuration::get("flagship_markup")/100) * $cost);
+            $cost += floatVal(Configuration::get('flagship_fee'));
+            $shipping_cost=Tools::substr($value, 0, strpos($value, "-")) == $carrier->name ? $cost : $shipping_cost;
+        }
+        return $shipping_cost;
+    }
+
+    protected function getCouriers($rate){
+        $couriers = [];
+        foreach ($rate as $value) {
+            $couriers[] = Tools::substr($value, 0, strpos($value, "-"));
+        }
+        return $couriers;
     }
 
     public function getOrderShippingCostExternal($params) : bool
@@ -293,7 +317,7 @@ class FlagshipShipping extends CarrierModule
         return $boxes;
     }
 
-    protected function getShipmentId(int $id_order) //: ?int
+    protected function getShipmentId(int $id_order) : ?int
     {
         $sql = new DbQuery();
         $sql->select('flagship_shipment_id');
@@ -451,6 +475,27 @@ class FlagshipShipping extends CarrierModule
                 'input' => [
                     [
                         'col' => 4,
+                        'type' => 'select',
+                        'label' => $this->l('Test Environment'),
+                        'name' => 'flagship_test_env',
+                        'options' => [
+                            'query' => [
+                                [
+                                    'key' => 0,
+                                    'name' => 'No'
+                                ],
+                                [
+                                    'key' => 1,
+                                    'name' => 'Yes'
+                                ]
+                            ],
+                            'id' => 'key',
+                            'name' => 'name',
+                        ]
+
+                    ],
+                    [
+                        'col' => 4,
                         'type' => 'text',
                         'desc' => Configuration::get('flagship_api_token') ? 'API Token is set'
                             : $this->l('Enter API Token'),
@@ -472,7 +517,7 @@ class FlagshipShipping extends CarrierModule
                     [
                         'col' => 4,
                         'type' => 'select',
-                        'label' => $this->l('Residential Shipment'),
+                        'label' => $this->l('Residential Shipments'),
                         'name' => 'flagship_residential',
                         'options' => [
                             'query' => [
@@ -557,6 +602,7 @@ class FlagshipShipping extends CarrierModule
     {
         $apiToken = Configuration::get('flagship_api_token') ? Configuration::get('flagship_api_token') : '';
         return [
+            'flagship_test_env' => Configuration::get('flagship_test_env'),
             'flagship_api_token' => '',
             'flagship_markup' => Configuration::get('flagship_markup'),
             'flagship_fee' => Configuration::get('flagship_fee'),
@@ -575,25 +621,28 @@ class FlagshipShipping extends CarrierModule
      */
     protected function postProcess() : string
     {
+
         $apiToken = empty(Tools::getValue('flagship_api_token')) ?
-        Configuration::get('flagship_api_token') :
-        Tools::getValue('flagship_api_token');
+                Configuration::get('flagship_api_token') :
+                Tools::getValue('flagship_api_token');
         $fee = empty(Tools::getValue('flagship_fee')) ? 0 : Tools::getValue('flagship_fee');
         $markup = empty(Tools::getValue('flagship_markup')) ? 0 : Tools::getValue('flagship_markup');
         $residential = empty(Tools::getValue('flagship_residential')) ? 0 :
                     Tools::getValue('flagship_residential');
+        $testEnv = empty(Tools::getValue('flagship_test_env')) ? 0 : Tools::getValue('flagship_test_env');
 
-        if (is_string(Configuration::get('flagship_fee')) && is_string(Configuration::get('flagship_api_token')) && is_string(Configuration::get('flagship_markup'))) { //fields exist in db
+        if (is_string(Configuration::get('flagship_fee')) && is_string(Configuration::get('flagship_api_token')) && is_string(Configuration::get('flagship_markup')) ) { //fields exist in db
 
             $feeFlag = $fee != Configuration::get('flagship_fee') ?
             Configuration::updateValue('flagship_fee', $fee) : 0 ;
             $markupFlag = $markup != Configuration::get('flagship_markup') ?
-             Configuration::updateValue('flagship_markup', $markup) : 0 ;
-            $residentialFlag = $residentialFlag != Configuration::get('flagship_residential') ?
-             Configuration::updateValue('flagship_residential', $residential) : 0 ;
+            Configuration::updateValue('flagship_markup', $markup) : 0 ;
+            $residentialFlag = $residential != Configuration::get('flagship_residential') ?
+            Configuration::updateValue('flagship_residential', $residential) : 0 ;
+            $testEnvFlag = $testEnv != Configuration::get('flagship_test_env') ? Configuration::updateValue('flagship_test_env',$testEnv) : 0;
 
             $returnFlag = $apiToken != Configuration::get('flagship_api_token') ?
-            ($this->isTokenValid($apiToken) ?
+            ($this->isTokenValid($apiToken,$testEnv) ?
             Configuration::updateValue('flagship_api_token', $apiToken) : 0)
              : 0;
 
@@ -604,19 +653,38 @@ class FlagshipShipping extends CarrierModule
             return $returnValue;
         }
 
-        if ($this->setApiToken($apiToken) && $this->setMarkup($markup) && $this->setHandlingFee($fee)) {
-            $flagship = new Flagship($apiToken, SMARTSHIP_API_URL, 'Prestashop', _PS_VERSION_);
+        if ($this->setApiToken($apiToken,$testEnv) && $this->setMarkup($markup) && $this->setHandlingFee($fee) && $this->setTestEnv($testEnv) && $this->setResidential($residential)) {
+            $url = $this->getBaseUrl();
+            $flagship = new Flagship($apiToken, $url, 'Prestashop', _PS_VERSION_);
             $availableServices = $flagship->availableServicesRequest()->execute();
+            $this->prepareCarriers($availableServices);
 
-            foreach ($availableServices as $availableService) {
-                $carrier = $this->addCarrier($availableService);
-                $this->addZones($carrier);
-                $this->addGroups($carrier);
-                $this->addRanges($carrier);
-            }
             return $this->displayConfirmation($this->l('FlagShip Configured'));
         }
         return $this->displayWarning($this->l("Oops! Token is invalid or same token is set."));
+    }
+
+    protected function prepareCarriers($availableServices) : int {
+        foreach ($availableServices as $availableService) {
+            $carrier = $this->addCarrier($availableService);
+            $this->addZones($carrier);
+            $this->addGroups($carrier);
+            $this->addRanges($carrier);
+        }
+        return 0;
+    }
+
+    protected function getBaseUrl() : string {
+        $baseUrl = Configuration::get('flagship_test_env') == 1 ? TEST_API_URL : SMARTSHIP_API_URL;
+        return $baseUrl;
+    }
+
+    protected function setResidential(string $residential) : int {
+        return Configuration::updateValue('flagship_residential',$residential);
+    }
+
+    protected function setTestEnv(string $testEnv) : int {
+        return Configuration::updateValue('flagship_test_env', $testEnv);
     }
 
     protected function insertBoxDetails() : string
@@ -646,7 +714,7 @@ class FlagshipShipping extends CarrierModule
     }
 
 
-    protected function validateMetricDimensions($length, $width, $height)
+    protected function validateMetricDimensions(float $length, float $width, float $height) : float
     {
         $length = $length/2.54;
         $width = $width/2.54;
@@ -658,9 +726,9 @@ class FlagshipShipping extends CarrierModule
     }
 
 
-    protected function verifyToken(string $apiToken) : bool
+    protected function verifyToken(string $apiToken, int $testEnv) : bool
     {
-        if ($this->isTokenValid($apiToken) && !$this->isCurrentTokenSame($apiToken)) {
+        if ($this->isTokenValid($apiToken, $testEnv) && !$this->isCurrentTokenSame($apiToken)) {
             Configuration::updateValue('flagship_api_token', $apiToken);
             return true;
         }
@@ -686,9 +754,11 @@ class FlagshipShipping extends CarrierModule
         return false;
     }
 
-    protected function isTokenValid(string $token) : bool
+    protected function isTokenValid(string $token, int $testEnv) : bool
     {
-        $flagship = new Flagship($token, SMARTSHIP_API_URL, 'Prestashop', _PS_VERSION_);
+        $url = $testEnv == 1 ? TEST_API_URL : SMARTSHIP_API_URL;
+
+        $flagship = new Flagship($token, $url, 'Prestashop', _PS_VERSION_);
         try {
             $checkTokenRequest = $flagship->validateTokenRequest($token);
             $checkTokenRequest->execute();
@@ -698,9 +768,9 @@ class FlagshipShipping extends CarrierModule
         }
     }
 
-    protected function setApiToken(string $apiToken) : string
+    protected function setApiToken(string $apiToken, int $testEnv) : string
     {
-        if (!$this->verifyToken($apiToken)) {
+        if (!$this->verifyToken($apiToken, $testEnv)) {
             return false;
         }
         Configuration::updateValue('flagship_api_token', $apiToken);
@@ -907,7 +977,8 @@ class FlagshipShipping extends CarrierModule
         }
 
         $token = Configuration::get('flagship_api_token');
-        $flagship = new Flagship($token, SMARTSHIP_API_URL, 'Prestashop', _PS_VERSION_);
+        $url = $this->getBaseUrl();
+        $flagship = new Flagship($token, $url, 'Prestashop', _PS_VERSION_);
         $packingPayload = [
             'items' => $items,
             'boxes' => $boxes,
@@ -927,7 +998,7 @@ class FlagshipShipping extends CarrierModule
         return $packages;
     }
 
-    protected function getPackedItems($packings)
+    protected function getPackedItems(\Flagship\Shipping\Collections\PackingCollection $packings) : array
     {
         if ($packings == null) {
             return [

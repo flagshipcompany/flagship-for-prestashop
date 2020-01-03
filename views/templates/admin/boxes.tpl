@@ -26,7 +26,7 @@
 <div class="panel">
 	<div class = "panel-heading"><i class="icon icon-archive"></i> Boxes (Units: {$units|escape:'htmlall':'UTF-8'})</div>
 	<div class = "panel-body">
-    	{$boxes|escape:'htmlall':'UTF-8'}
+    	{$boxes}
     </div>
 </div>
 <script>
