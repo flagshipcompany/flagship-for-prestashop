@@ -58,3 +58,10 @@ Customer can select the shipping method.
 Admin gets an option to Send orders to FlagShip.
 
 ![Image of Order](https://github.com/flagshipcompany/flagship-for-prestashop/blob/master/views/img/order.png)
+
+To change the transit time for a carrier
+![Image of Edit Carrier](https://github.com/flagshipcompany/flagship-for-prestashop/blob/master/views/img/editCarrier.jpg)
+
+![Image of Transit Time](https://github.com/flagshipcompany/flagship-for-prestashop/blob/master/views/img/editCarrierTransitTime.jpg)
+
+![Image of Transit Time Changed](https://github.com/flagshipcompany/flagship-for-prestashop/blob/master/views/img/editCarrierTransitTimeChanged.jpg)
