@@ -49,9 +49,12 @@ class FlagshipShipping extends CarrierModule
     {
         $this->name = 'flagshipshipping';
         $this->tab = 'shipping_logistics';
-        $this->version = '1.0.0';
+        $this->version = '1.0.9';
         $this->author = 'FlagShip Courier Solutions';
         $this->need_instance = 0;
+
+        $this->logger = new FileLogger(0); //0 == debug level, logDebug() won’t work without this.
+        $this->logger->setFilename(_PS_ROOT_DIR_."/var/logs/flagship.log");
 
         /**
          * Set $this->bootstrap to true if your module is compliant with bootstrap (PrestaShop 1.6)
@@ -74,6 +77,7 @@ class FlagshipShipping extends CarrierModule
 
         $this->registerHook('displayBackOfficeOrderActions');
         $this->registerHook('actionValidateCustomerAddressForm');
+        $this->registerHook('actionCartSave');
     }
 
     /**
@@ -122,8 +126,8 @@ class FlagshipShipping extends CarrierModule
         $tab->module = $this->name;
         $tab->add();
         $tab->save();
-
-        return parent::install() ;
+        $this->logger->logDebug("Flagship for prestashop installed");
+        return parent::install();
     }
 
     public function uninstall()
@@ -141,6 +145,7 @@ class FlagshipShipping extends CarrierModule
         Db::getInstance()->execute('DROP TABLE `'._DB_PREFIX_.'flagship_shipping`');
         Db::getInstance()->execute('DROP TABLE `'._DB_PREFIX_.'flagship_boxes`');
         Db::getInstance()->execute('DELETE FROM `'._DB_PREFIX_.'carrier` WHERE external_module_name = "flagshipshipping"');
+        $this->logger->logDebug("Flagship for prestashop uninstalled");
         return parent::uninstall();
     }
 
@@ -193,12 +198,16 @@ class FlagshipShipping extends CarrierModule
     public function prepareShipment(string $token, int $orderId) : string
     {
         $url = $this->getBaseUrl();
-
+        $link =  new Link();
         try {
+            $storeName = $this->context->shop->name;
             $flagship = new Flagship($token, $url, 'Prestashop', _PS_VERSION_);
-            $prepareShipment = $flagship->prepareShipmentRequest($this->getPayloadForShipment($orderId));
+            $payload = $this->getPayloadForShipment($orderId);
+            $this->logger->logDebug("Payload for prepare shipment: ".json_encode($payload));
+            $prepareShipment = $flagship->prepareShipmentRequest($payload)->setStoreName($storeName)->setOrderId($orderId);
             $prepareShipment = $prepareShipment->execute();
             $shipmentId = $prepareShipment->shipment->id;
+            $this->logger->logDebug("Flagship shipment prepared for order id: ".$orderId);
             $this->updateOrder($shipmentId, $orderId);
             return $this->displayConfirmation('FlagShip Shipment Prepared : '.$shipmentId);
         } catch (Exception $e) {
@@ -209,9 +218,14 @@ class FlagshipShipping extends CarrierModule
     public function updateShipment(string $token, int $orderId, int $shipmentId) : string
     {
         $url = $this->getBaseUrl();
+        $link = new Link();
         try {
+
+            $storeName = $this->context->shop->name;
             $flagship = new Flagship($token, $url, 'Prestashop', _PS_VERSION_);
-            $updateShipment = $flagship->editShipmentRequest($this->getPayloadForShipment($orderId), $shipmentId);
+            $payload = $this->getPayloadForShipment($orderId);
+            $this->logger->logDebug("Payload for upload shipment: ".json_encode($payload));
+            $updateShipment = $flagship->editShipmentRequest($payload, $shipmentId)->setStoreName($storeName)->setOrderId($orderId);
             $updatedShipment = $updateShipment->execute();
             $updatedShipmentId = $updatedShipment->shipment->id;
             return $this->displayConfirmation('Updated! FlagShip Shipment ');
@@ -241,7 +255,10 @@ class FlagshipShipping extends CarrierModule
         $payload = $this->getPayload($address);
 
         if (!isset(Context::getContext()->cookie->rates)) {
-            $rates = $flagship->createQuoteRequest($payload)->execute()->sortByPrice();
+
+            $storeName = $this->context->shop->name;
+            $this->logger->logDebug("Quotes payload: ".json_encode($payload));
+            $rates = $flagship->createQuoteRequest($payload)->setStoreName($storeName)->execute()->sortByPrice();
             Context::getContext()->cookie->rates = 1;
             $ratesArray = $this->prepareRates($rates);
             $str = $this->getRatesString($ratesArray);
@@ -287,6 +304,14 @@ class FlagshipShipping extends CarrierModule
 
     public function hookActionValidateCustomerAddressForm() : bool
     {
+        unset(Context::getContext()->cookie->rates);
+        unset(Context::getContext()->cookie->rate);
+        return true;
+    }
+
+    public function hookActionCartSave() : bool
+    {
+
         unset(Context::getContext()->cookie->rates);
         unset(Context::getContext()->cookie->rate);
         return true;
@@ -435,7 +460,6 @@ class FlagshipShipping extends CarrierModule
             'options' => $options,
             'payment' => $payment
         ];
-
         return $payload;
     }
 
@@ -640,6 +664,7 @@ class FlagshipShipping extends CarrierModule
             $residentialFlag = $residential != Configuration::get('flagship_residential') ?
             Configuration::updateValue('flagship_residential', $residential) : 0 ;
             $testEnvFlag = $testEnv != Configuration::get('flagship_test_env') ? Configuration::updateValue('flagship_test_env',$testEnv) : 0;
+            // $apiToken = $apiToken != Configuration::get('flagship_api_token') ? Configuration::updateValue('flagship_api_token',$apiToken) : 0;
 
             $returnFlag = $apiToken != Configuration::get('flagship_api_token') ?
             ($this->isTokenValid($apiToken,$testEnv) ?
@@ -654,9 +679,10 @@ class FlagshipShipping extends CarrierModule
         }
 
         if ($this->setApiToken($apiToken,$testEnv) && $this->setMarkup($markup) && $this->setHandlingFee($fee) && $this->setTestEnv($testEnv) && $this->setResidential($residential)) {
+            $storeName = $this->context->shop->name;
             $url = $this->getBaseUrl();
             $flagship = new Flagship($apiToken, $url, 'Prestashop', _PS_VERSION_);
-            $availableServices = $flagship->availableServicesRequest()->execute();
+            $availableServices = $flagship->availableServicesRequest()->setStoreName($storeName)->execute();
             $this->prepareCarriers($availableServices);
 
             return $this->displayConfirmation($this->l('FlagShip Configured'));
@@ -758,9 +784,10 @@ class FlagshipShipping extends CarrierModule
     {
         $url = $testEnv == 1 ? TEST_API_URL : SMARTSHIP_API_URL;
 
-        $flagship = new Flagship($token, $url, 'Prestashop', _PS_VERSION_);
+        $flagship = new Flagship($token, $url, 'Prestashop', _PS_VERSION_); //storeName
         try {
-            $checkTokenRequest = $flagship->validateTokenRequest($token);
+            $storeName = $this->context->shop->name;
+            $checkTokenRequest = $flagship->validateTokenRequest($token)->setStoreName($storeName);
             $checkTokenRequest->execute();
             return true;
         } catch (Exception $e) {
@@ -818,7 +845,7 @@ class FlagshipShipping extends CarrierModule
         $carrier->shipping_method = 2;
         $img = 'fedex';
 
-        $couriers = ['canpar','ups','purolator','dhl'];
+        $couriers = ['canpar','ups','purolator','dhl','dicom'];
 
         foreach ($couriers as $courier) {
             $img = $this->getCourierImage($availableService, $courier, $img);
@@ -960,16 +987,19 @@ class FlagshipShipping extends CarrierModule
         $boxes = $this->getBoxes();
 
         if (count($boxes) == 0) {
+
+            for($i=0;$i<count($items);$i++){
+                $temp[] = [
+                    'length' => 1,
+                    'width' => 1,
+                    'height' => 1,
+                    'weight' => 1,
+                    'description' => 'Item '.$i
+                ];
+            }
+
             return [
-                'items' => [
-                    [
-                        'length' => 1,
-                        'width' => 1,
-                        'height' => 1,
-                        'weight' => 1,
-                        'description' => 'Item 1'
-                    ]
-                ],
+                'items' => $temp,
                 "units" => $this->getWeightUnits(),
                 "type"  => "package",
                 "content" => "goods"
@@ -1036,7 +1066,6 @@ class FlagshipShipping extends CarrierModule
                 "description"=>is_null($order) ? $product["name"] : $product["product_name"]
             ];
         }
-
         return $items;
     }
 
