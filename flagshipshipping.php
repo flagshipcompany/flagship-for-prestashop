@@ -49,7 +49,7 @@ class FlagshipShipping extends CarrierModule
     {
         $this->name = 'flagshipshipping';
         $this->tab = 'shipping_logistics';
-        $this->version = '1.0.9';
+        $this->version = '1.0.10';
         $this->author = 'FlagShip Courier Solutions';
         $this->need_instance = 0;
 
@@ -280,10 +280,14 @@ class FlagshipShipping extends CarrierModule
     protected function getShippingCost(array $rate,Carrier $carrier) : float
     {
         $shipping_cost = 0.00;
+        $costs = [];
+        $shippingCosts = [];
         foreach ($rate as $value) {
             $cost = floatVal(Tools::substr($value, strpos($value, "-")+1));
             $cost += floatVal((Configuration::get("flagship_markup")/100) * $cost);
             $cost += floatVal(Configuration::get('flagship_fee'));
+            $taxes = ltrim(strrchr($value,"-"),"-");
+            $cost += floatVal($taxes);
             $shipping_cost=Tools::substr($value, 0, strpos($value, "-")) == $carrier->name ? $cost : $shipping_cost;
         }
         return $shipping_cost;
@@ -812,7 +816,8 @@ class FlagshipShipping extends CarrierModule
                 "courier" => $rate->getCourierName() == 'FedEx' ?
                     'FedEx '.$rate->getCourierDescription() :
                     $rate->getCourierDescription(),
-                "subtotal" => $rate->getTotal()
+                "subtotal" => $rate->getSubtotal(),
+                "taxes" => $rate->getTaxesTotal()
             ];
         }
         return $ratesArray;
