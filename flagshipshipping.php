@@ -49,7 +49,7 @@ class FlagshipShipping extends CarrierModule
     {
         $this->name = 'flagshipshipping';
         $this->tab = 'shipping_logistics';
-        $this->version = '1.0.10';
+        $this->version = '1.0.11';
         $this->author = 'FlagShip Courier Solutions';
         $this->need_instance = 0;
 
@@ -78,6 +78,7 @@ class FlagshipShipping extends CarrierModule
         $this->registerHook('displayBackOfficeOrderActions');
         $this->registerHook('actionValidateCustomerAddressForm');
         $this->registerHook('actionCartSave');
+        $this->registerHook('displayAdminAfterHeader');
     }
 
     /**
@@ -148,6 +149,35 @@ class FlagshipShipping extends CarrierModule
         $this->logger->logDebug("Flagship for prestashop uninstalled");
         return parent::uninstall();
     }
+
+    public function hookDisplayAdminAfterHeader(array $params)
+    {
+        $curl = curl_init();
+
+        curl_setopt_array($curl, array(
+          CURLOPT_URL => "https://api.github.com/repos/flagshipcompany/flagship-for-prestashop/releases/latest",
+          CURLOPT_RETURNTRANSFER => true,
+          CURLOPT_ENCODING => "",
+          CURLOPT_MAXREDIRS => 10,
+          CURLOPT_TIMEOUT => 0,
+          CURLOPT_FOLLOWLOCATION => true,
+          CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+          CURLOPT_CUSTOMREQUEST => "GET",
+          CURLOPT_USERAGENT => " ",
+        ));
+
+        $response = json_decode(curl_exec($curl));
+
+        curl_close($curl);
+        $latestTag = substr($response->tag_name,1);
+        $tagMismatch = strcasecmp($latestTag, $this->version) != 0 ? 1 : 0;
+
+        $this->context->smarty->assign(array(
+            'tagMismatch' => $tagMismatch
+        ));
+        return $this->display(__FILE__,'notification.tpl');
+    }
+
 
     /**
      * Load the configuration form

@@ -2,6 +2,10 @@
 
 PrestaShop module that allows you to ship with FlagShip. We strongly recommend you to use the latest version of PrestaShop.
 
+# Requirements
+
+We recommend using the latest version of PHP. However, the minimum requirement is PHP 7.1.
+
 # Compatibility
 
 Compatible with PrestaShop 1.7.x
