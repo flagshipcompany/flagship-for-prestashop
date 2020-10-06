@@ -11,5 +11,8 @@
     "require": {
         "flagshipcompany/flagship-api-sdk": "^1.1"
     },
-    "type" : "prestashop-module"
+    "type" : "prestashop-module",
+	"config": {
+        "prepend-autoloader": false
+    }
 }
