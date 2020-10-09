@@ -168,8 +168,8 @@ class FlagshipShipping extends CarrierModule
 
         curl_close($curl);
         $latestTag = Tools::substr($response->tag_name, 1);
-        $latestTagNumber = strrchr($latestTag,".")+1; 
-        $versionNumber = strrchr($this->version, ".")+1;
+        $latestTagNumber = strrchr($latestTag,"."); 
+        $versionNumber = strrchr($this->version, ".");
 
         $tagMismatch = $latestTagNumber > $versionNumber ? 1 : 0;
 
