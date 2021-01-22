@@ -47,7 +47,7 @@ class FlagshipShipping extends CarrierModule
     {
         $this->name = 'flagshipshipping';
         $this->tab = 'shipping_logistics';
-        $this->version = '1.0.12';
+        $this->version = '1.0.13';
         $this->author = 'FlagShip Courier Solutions';
         $this->need_instance = 0;
 
@@ -164,10 +164,11 @@ class FlagshipShipping extends CarrierModule
           CURLOPT_USERAGENT => " ",
         ));
 
-        $response = json_decode(curl_exec($curl));
+	$response = json_decode(curl_exec($curl),True);
 
-        curl_close($curl);
-        $latestTag = Tools::substr($response->tag_name, 1);
+	curl_close($curl);
+	$latestTag = array_key_exists("tag_name",$response) ? Tools::substr($response["tag_name"], 1) : 0;
+
         $latestTagNumber = strrchr($latestTag,"."); 
         $versionNumber = strrchr($this->version, ".");
 
