@@ -41,8 +41,13 @@ class AdminFlagshipShippingController extends ModuleAdminController
     {
         parent::initContent();
         $template_file = _PS_MODULE_DIR_. 'flagshipshipping/views/templates/admin/convert.tpl';
+        $testEnv = Configuration::get('flagship_test_env');
+        $webUrl = SMARTSHIP_WEB_URL;
+        if($testEnv == 1){
+            $webUrl = SMARTSHIP_TEST_WEB_URL;
+        }
         $this->context->smarty->assign(array(
-            'SMARTSHIP_WEB_URL' => SMARTSHIP_WEB_URL
+            'SMARTSHIP_WEB_URL' => $webUrl
         ));
 
         $content = $this->context->smarty->fetch($template_file);

@@ -20,7 +20,7 @@
 *  @author FlagShip Courier Solutions <support@flagshipcompany.com>
 *  @copyright  FlagShip Courier Solutions
 *  @license    https://opensource.org/licenses/MIT
-*  
+*
 *}
 
 <div class="container-fluid">

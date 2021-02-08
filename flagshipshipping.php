@@ -36,7 +36,8 @@ use Flagship\Shipping\Flagship;
 //NO Tailing slashes please
 define('SMARTSHIP_WEB_URL', 'https://smartship-ng.flagshipcompany.com');
 define('SMARTSHIP_API_URL', 'https://api.smartship.io');
-define('TEST_API_URL', 'https://test-api.smartship.io');
+define('SMARTSHIP_TEST_API_URL', 'https://test-api.smartship.io');
+define('SMARTSHIP_TEST_WEB_URL','https://test-smartshipng.flagshipcompany.com');
 
 class FlagshipShipping extends CarrierModule
 {
@@ -455,7 +456,12 @@ class FlagshipShipping extends CarrierModule
 
         $order = new Order($orderId);
         $addressTo = new Address($order->id_address_delivery);
-        $products = $order->getProducts();
+
+// var_dump(get_class_methods($order));
+// var_dump(($order->getProductsDetail()));
+// die();
+
+        $products = $order->getProductsDetail();
 
         $name = empty($addressTo->company) ? $addressTo->firstname : $addressTo->company;
          $isCommercial = Configuration::get('flagship_residential') ? false : true;
@@ -755,7 +761,7 @@ class FlagshipShipping extends CarrierModule
     }
 
     protected function getBaseUrl() : string {
-        $baseUrl = Configuration::get('flagship_test_env') == 1 ? TEST_API_URL : SMARTSHIP_API_URL;
+        $baseUrl = Configuration::get('flagship_test_env') == 1 ? SMARTSHIP_TEST_API_URL : SMARTSHIP_API_URL;
         return $baseUrl;
     }
 
@@ -836,7 +842,7 @@ class FlagshipShipping extends CarrierModule
 
     protected function isTokenValid(string $token, int $testEnv) : bool
     {
-        $url = $testEnv == 1 ? TEST_API_URL : SMARTSHIP_API_URL;
+        $url = $testEnv == 1 ? SMARTSHIP_TEST_API_URL : SMARTSHIP_API_URL;
 
         $flagship = new Flagship($token, $url, 'Prestashop', _PS_VERSION_); //storeName
         try {
@@ -1031,7 +1037,7 @@ class FlagshipShipping extends CarrierModule
 
     protected function getPackages($order = null) : array
     {
-        $products = is_null($order) ? Context::getContext()->cart->getProducts() : $order->getProducts();
+        $products = is_null($order) ? Context::getContext()->cart->getProducts() : $order->getProductsDetail();
         $packages = [];
         $items = [];
 
