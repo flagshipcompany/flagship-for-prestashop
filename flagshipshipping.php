@@ -48,7 +48,7 @@ class FlagshipShipping extends CarrierModule
     {
         $this->name = 'flagshipshipping';
         $this->tab = 'shipping_logistics';
-        $this->version = '1.0.14';
+        $this->version = '1.0.15';
         $this->author = 'FlagShip Courier Solutions';
         $this->need_instance = 0;
 
@@ -442,10 +442,10 @@ class FlagshipShipping extends CarrierModule
     protected function getPayloadForShipment(int $orderId) : array
     {
         $from = [
-            "name"=>Configuration::get('PS_SHOP_NAME'),
-            "attn"=>Configuration::get('PS_SHOP_NAME'),
-            "address"=>Configuration::get('PS_SHOP_ADDR1'),
-            "suite"=>Configuration::get('PS_SHOP_ADDR2'),
+            "name"=>substr(Configuration::get('PS_SHOP_NAME'),0,29),
+            "attn"=>substr(Configuration::get('PS_SHOP_NAME'),0,20),
+            "address"=>substr(Configuration::get('PS_SHOP_ADDR1'),0,29),
+            "suite"=>substr(Configuration::get('PS_SHOP_ADDR2'),0,17),
             "city"=>Configuration::get('PS_SHOP_CITY'),
             "country"=>Country::getIsoById(Configuration::get('PS_SHOP_COUNTRY_ID')),
             "state"=>$this->getStateCode(Configuration::get('PS_SHOP_STATE_ID')),
@@ -456,20 +456,17 @@ class FlagshipShipping extends CarrierModule
 
         $order = new Order($orderId);
         $addressTo = new Address($order->id_address_delivery);
-
-// var_dump(get_class_methods($order));
-// var_dump(($order->getProductsDetail()));
-// die();
+        $customer = new Customer($order->id_customer);
 
         $products = $order->getProductsDetail();
 
         $name = empty($addressTo->company) ? $addressTo->firstname : $addressTo->company;
          $isCommercial = Configuration::get('flagship_residential') ? false : true;
         $to = [
-            "name"=>$name,
-            "attn"=>$addressTo->firstname,
-            "address"=>$addressTo->address1,
-            "suite"=>$addressTo->address2,
+            "name"=>substr($name,0,29),
+            "attn"=>substr($addressTo->firstname.' '.$addressTo->lastname,0,20),
+            "address"=>substr($addressTo->address1,0,29),
+            "suite"=>substr($addressTo->address2,0,17),
             "city"=>$addressTo->city,
             "country"=>Country::getIsoById((int)$addressTo->id_country),
             "state"=>$this->getStateCode((int)$addressTo->id_state),
@@ -482,7 +479,8 @@ class FlagshipShipping extends CarrierModule
 
         $options = [
             "signature_required"=>false,
-            "reference"=>"PrestaShop Order# ".$orderId
+            "reference"=>"PrestaShop Order# ".$orderId,
+            "driver_instructions"=>$customer->email
         ];
 
         $payment = [
@@ -593,6 +591,27 @@ class FlagshipShipping extends CarrierModule
                             'id' => 'key',
                             'name' => 'name',
                         ]
+                    ],
+                    [
+                        'col' => 4,
+                        'type' => 'select',
+                        'label' => $this->l('Label Type'),
+                        'name' => 'flagship_label',
+                        'options' => [
+                            'query' => [
+                                [
+                                    'key' => 0,
+                                    'name' => 'Thermal'
+                                ],
+                                [
+                                    'key' => 1,
+                                    'name' => 'Regular'
+                                ]
+                            ],
+                            'id' => 'key',
+                            'name' => 'name',
+                        ]
+
                     ],
                 ],
                 'submit' => [
@@ -906,7 +925,7 @@ class FlagshipShipping extends CarrierModule
         $carrier->shipping_method = 2;
         $img = 'fedex';
 
-        $couriers = ['canpar','ups','purolator','dhl','dicom'];
+        $couriers = ['canpar','ups','purolator','dhl','gls','nationex'];
 
         foreach ($couriers as $courier) {
             $img = $this->getCourierImage($availableService, $courier, $img);
