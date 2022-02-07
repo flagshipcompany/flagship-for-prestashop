@@ -481,8 +481,8 @@ class FlagshipShipping extends CarrierModule
 
         $options = [
             "signature_required"=>false,
-            "reference"=>"PrestaShop Order# ".$orderId,
-            "driver_instructions"=>$driverInstructions,
+            "reference"=>substr("PrestaShop Order# ".$orderId,0,29),
+            "driver_instructions"=>substr($driverInstructions,0,29),
         ];
 
         $payment = [
