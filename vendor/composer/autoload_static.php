@@ -151,6 +151,7 @@ class ComposerStaticInitcf954dcf915cdff53c356b54d6c6a661
         'Flagship\\Shipping\\Tests\\RatesCollectionTest' => __DIR__ . '/..' . '/flagshipcompany/flagship-api-sdk/Shipping/Tests/RatesCollectionTests.php',
         'Flagship\\Shipping\\Tests\\ShipmentTests' => __DIR__ . '/..' . '/flagshipcompany/flagship-api-sdk/Shipping/Tests/ShipmentTests.php',
         'Flagship\\Shipping\\Tests\\TrackShipmentTests' => __DIR__ . '/..' . '/flagshipcompany/flagship-api-sdk/Shipping/Tests/TrackShipmentTests.php',
+        'PhpToken' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/PhpToken.php',
         'Stringable' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/Stringable.php',
         'UnhandledMatchError' => __DIR__ . '/..' . '/symfony/polyfill-php80/Resources/stubs/UnhandledMatchError.php',
         'ValidateTokenTests' => __DIR__ . '/..' . '/flagshipcompany/flagship-api-sdk/Shipping/Tests/ValidateTokenTests.php',

@@ -48,7 +48,7 @@ class FlagshipShipping extends CarrierModule
     {
         $this->name = 'flagshipshipping';
         $this->tab = 'shipping_logistics';
-        $this->version = '1.0.16';
+        $this->version = '1.0.17';
         $this->author = 'FlagShip Courier Solutions';
         $this->need_instance = 0;
 
@@ -577,6 +577,26 @@ class FlagshipShipping extends CarrierModule
                     [
                         'col' => 4,
                         'type' => 'select',
+                        'label' => $this->l('Use Packing Api'),
+                        'name' => 'flagship_packing_api',
+                        'options' => [
+                            'query' => [
+                                [
+                                    'key' => 0,
+                                    'name' => 'No'
+                                ],
+                                [
+                                    'key' => 1,
+                                    'name' => 'Yes'
+                                ]
+                            ],
+                            'id' => 'key',
+                            'name' => 'name',
+                        ]
+                    ],
+                    [
+                        'col' => 4,
+                        'type' => 'select',
                         'label' => $this->l('Residential Shipments'),
                         'name' => 'flagship_residential',
                         'options' => [
@@ -709,6 +729,7 @@ class FlagshipShipping extends CarrierModule
             'flagship_fee' => Configuration::get('flagship_fee'),
             'flagship_residential' => Configuration::get('flagship_residential'),
             'flagship_email_on_label' => Configuration::get('flagship_email_on_label'),
+            'flagship_packing_api' => Configuration::get('flagship_packing_api'),
             'flagship_box_model' => '',
             'flagship_box_length' => '',
             'flagship_box_width' => '',
@@ -721,9 +742,8 @@ class FlagshipShipping extends CarrierModule
     /**
      * Save form data.
      */
-    protected function postProcess() : string
+    protected function postProcess() 
     {
-
         $apiToken = empty(Tools::getValue('flagship_api_token')) ?
                 Configuration::get('flagship_api_token') :
                 Tools::getValue('flagship_api_token');
@@ -734,6 +754,7 @@ class FlagshipShipping extends CarrierModule
                     Tools::getValue('flagship_residential');
         $testEnv = empty(Tools::getValue('flagship_test_env')) ? 0 : Tools::getValue('flagship_test_env');
         $emailOnLabel = empty(Tools::getValue('flagship_email_on_label')) ? 0 : Tools::getValue('flagship_email_on_label');
+        $packing = empty(Tools::getValue('flagship_packing_api')) ? 0 : Tools::getValue('flagship_packing_api');
 
         if (is_string(Configuration::get('flagship_fee')) && is_string(Configuration::get('flagship_api_token')) && is_string(Configuration::get('flagship_markup')) ) { //fields exist in db
             $feeFlag = $fee != Configuration::get('flagship_fee') ?
@@ -746,8 +767,10 @@ class FlagshipShipping extends CarrierModule
                                 Configuration::updateValue('flagship_test_env', $testEnv) : 0;
             $emailOnLabel = $emailOnLabel != Configuration::get('flagship_email_on_label') ?
                                 Configuration::updateValue('flagship_email_on_label', $emailOnLabel) : 0;
+            $packing = $packing != Configuration::get('flagship_packing_api') ?
+                                Configuration::updateValue('flagship_packing_api', $packing) : 0;
 
-            return $this->displayConfirmation($this->getReturnMessage($apiToken, $testEnv, $feeFlag, $markupFlag, $residentialFlag,$emailOnLabel));
+            return $this->displayConfirmation($this->getReturnMessage($apiToken, $testEnv, $feeFlag, $markupFlag, $residentialFlag,$emailOnLabel, $packing));
 
         }
 
@@ -763,7 +786,7 @@ class FlagshipShipping extends CarrierModule
         return $this->displayWarning($this->l("Oops! Token is invalid or same token is set."));
     }
 
-    protected function getReturnMessage(string $apiToken, int $testEnv, int $feeFlag, int $markupFlag, int $residentialFlag, int $emailOnLabel) : string
+    protected function getReturnMessage(string $apiToken, int $testEnv, int $feeFlag, int $markupFlag, int $residentialFlag, int $emailOnLabel, int $packing) : string
     {
         $returnMessage = "<b>";
         $validToken = 0;
@@ -780,20 +803,8 @@ class FlagshipShipping extends CarrierModule
             $returnMessage .= "Token not updated! ";
         }
 
-        if($feeFlag){
-            $returnMessage .= "Flat Handling Fee updated! ";
-        }
-
-        if($markupFlag){
-            $returnMessage .= "Percentage Markup Updated! ";
-        }
-
-        if($residentialFlag){
-            $returnMessage .= "Residential Shipments value updated! ";
-        }
-
-        if($emailOnLabel){
-            $returnMessage .= "Shipping label preferences updated! ";
+        if($feeFlag || $markupFlag || $residentialFlag || $emailOnLabel || $packing){
+            $returnMessage .= "Settings Updated";
         }
 
         $returnMessage .= "</b>";
@@ -873,6 +884,11 @@ class FlagshipShipping extends CarrierModule
             return true;
         }
         return false;
+    }
+
+    protected function setPacking(string $packing) : int 
+    {
+        return Configuration::updateValue('flagship_packing_api', $packing);
     }
 
     protected function setHandlingFee(string $fee) : int
@@ -1101,16 +1117,8 @@ class FlagshipShipping extends CarrierModule
 
         $boxes = $this->getBoxes();
 
-        if (count($boxes) == 0) {
-            for($i=0;$i<count($items);$i++){
-                $temp[] = [
-                    'length' => 1,
-                    'width' => 1,
-                    'height' => 1,
-                    'weight' => 1,
-                    'description' => 'Item '.$i
-                ];
-            }
+        if(!Configuration::get('flagship_packing_api') || count($boxes) == 0){ //use items as they are if boxes are not set
+            $temp = $items;
 
             return [
                 'items' => $temp,
@@ -1173,9 +1181,9 @@ class FlagshipShipping extends CarrierModule
 
         for ($i=0; $i < $qty; $i++) {
             $items[] = [
-                "width"  => $product["width"] == 0 ? 1 : $product["width"],
-                "height" => $product["height"] == 0 ? 1 : $product["height"],
-                "length" => $product["depth"] == 0 ? 1 : $product["depth"],
+                "width"  => $product["width"] == 0 ? 1 : ceil($product["width"]),
+                "height" => $product["height"] == 0 ? 1 : ceil($product["height"]),
+                "length" => $product["depth"] == 0 ? 1 : ceil($product["depth"]),
                 "weight" => $product["weight"] == 0 ? 1 : $product["weight"],
                 "description"=>is_null($order) ? $product["name"] : $product["product_name"]
             ];

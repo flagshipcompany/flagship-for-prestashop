@@ -72,7 +72,7 @@ class Rate
         return property_exists($this->rate,'service') ? $this->rate->service->courier_code : '';
     }
 
-    public function getDeliveryDate() : string
+    public function getDeliveryDate() : ?string
     {
         return property_exists($this->rate,'service') ? $this->rate->service->estimated_delivery_date : '';
     }

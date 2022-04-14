@@ -110,6 +110,7 @@ return array(
     'Flagship\\Shipping\\Tests\\RatesCollectionTest' => $vendorDir . '/flagshipcompany/flagship-api-sdk/Shipping/Tests/RatesCollectionTests.php',
     'Flagship\\Shipping\\Tests\\ShipmentTests' => $vendorDir . '/flagshipcompany/flagship-api-sdk/Shipping/Tests/ShipmentTests.php',
     'Flagship\\Shipping\\Tests\\TrackShipmentTests' => $vendorDir . '/flagshipcompany/flagship-api-sdk/Shipping/Tests/TrackShipmentTests.php',
+    'PhpToken' => $vendorDir . '/symfony/polyfill-php80/Resources/stubs/PhpToken.php',
     'Stringable' => $vendorDir . '/symfony/polyfill-php80/Resources/stubs/Stringable.php',
     'UnhandledMatchError' => $vendorDir . '/symfony/polyfill-php80/Resources/stubs/UnhandledMatchError.php',
     'ValidateTokenTests' => $vendorDir . '/flagshipcompany/flagship-api-sdk/Shipping/Tests/ValidateTokenTests.php',
