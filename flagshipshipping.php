@@ -48,7 +48,7 @@ class FlagshipShipping extends CarrierModule
     {
         $this->name = 'flagshipshipping';
         $this->tab = 'shipping_logistics';
-        $this->version = '1.0.17';
+        $this->version = '1.0.18';
         $this->author = 'FlagShip Courier Solutions';
         $this->need_instance = 0;
 

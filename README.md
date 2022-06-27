@@ -2,6 +2,9 @@
 
 PrestaShop module that allows you to ship with FlagShip. We strongly recommend you to use the latest version of PrestaShop.
 
+
+NOTE: FlagShip for Prestashop requires you to increase PHP upload_max_filesize to at least 3M. This can be done in your php.ini. Based on your server, the location of thsi file may vary. For apache, the file can be found at /etc/php/apache2/php.ini. For nginx, it is at /etc/php/7.1/fpm/php.ini
+
 # Requirements
 
 We recommend using the latest version of PHP. The minimum requirement is PHP 7.1
