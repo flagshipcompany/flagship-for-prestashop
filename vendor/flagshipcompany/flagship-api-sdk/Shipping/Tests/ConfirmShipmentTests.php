@@ -104,7 +104,7 @@ class ConfirmShipmentTests extends TestCase{
             $this->assertSame("https://flagshipcompany.com/ship/2950364/labels/06df987f0d2ef55d19da283baebaa12771e46a8f?document=therm",$this->confirmShipment->getThermalLabel());
         }
 
-        protected function setUp(){
+        protected function setUp() : void {
             $response = '{
                "shipment_id":2950364,
                "tracking_number":"329022136009",

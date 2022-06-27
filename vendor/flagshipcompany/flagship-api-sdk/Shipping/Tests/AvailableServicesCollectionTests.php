@@ -56,7 +56,7 @@ class AvailableServicesCollectionTests extends TestCase{
         $this->assertSame(3,count($this->servicesCollection->getOvernightServices()));
     }
 
-    protected function setUp(){
+    protected function setUp() : void {
         $response = '[
             {
                 "flagship_code": "intlExpressEarlyAm",

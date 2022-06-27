@@ -182,7 +182,7 @@ class ShipmentTests extends TestCase{
        $this->assertSame(NULL, $this->shipment->getReceiverPhoneExt());
    }
 
-    protected function setup(){
+    protected function setup() : void {
         $response  = '            {
                 "id": 2950191,
                 "tracking_number": "1Z0075Y02099202915",

@@ -53,7 +53,7 @@ class GetPickupListTests extends TestCase{
         $this->assertNotNull($this->pickupList->getCancelledPickups());
     }
 
-    protected function setUp(){
+    protected function setUp() : void {
         $response = '[
                 {
                     "id": "1276083",

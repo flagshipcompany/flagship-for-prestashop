@@ -140,7 +140,7 @@ class PickupTests extends TestCase{
     }
 
 
-    protected function setUp(){
+    protected function setUp() : void {
         
         $response = '{
             "id": "1085501",

@@ -4,7 +4,7 @@ namespace Flagship\Shipping\Tests;
 use \PHPUnit\Framework\TestCase;
 use Flagship\Shipping\Objects\Packing;
 
-class PackingTest extends TestCase{
+class PackingTests extends TestCase{
 
     public function testGetBoxModel(){
         $this->assertNotNull($this->packing->getBoxModel());
@@ -33,11 +33,11 @@ class PackingTest extends TestCase{
 
     public function testGetItems(){
         $this->assertNotNull($this->packing->getItems());
-        $this->assertInternalType('array',$this->packing->getItems());
+        $this->assertIsArray($this->packing->getItems());
         $this->assertCount(3,$this->packing->getItems());
     }
 
-    protected function setUp(){
+    protected function setUp() : void {
         $response = '{
                 "box_model": "Le grande box",
                 "length": "30",

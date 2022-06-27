@@ -193,7 +193,7 @@ class EditPickupTests extends TestCase{
     }
 
 
-    protected function setUp(){
+    protected function setUp() : void {
         $response = '{
             "id": "1085704",
             "confirmation": "2929602E9CP",

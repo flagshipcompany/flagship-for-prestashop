@@ -41,7 +41,7 @@ class QuoteTests extends TestCase{
         $this->assertSame(2.03,$this->rates->sortByTime()->last()->getTaxesTotal());
     }
 
-    protected function setUp(){
+    protected function setUp() : void {
         $response = '[
             {
                 "price": {

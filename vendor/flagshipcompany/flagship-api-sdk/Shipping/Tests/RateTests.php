@@ -27,7 +27,7 @@ class RateTests extends TestCase{
             "qst"=> 5.62
         ];
         $this->assertNotNull($this->rate->getTaxesDetails());
-        $this->assertInternalType('array', $this->rate->getTaxesDetails());
+        $this->assertIsArray($this->rate->getTaxesDetails());
         $this->assertSame($expected, $this->rate->getTaxesDetails());
     }
 
@@ -67,7 +67,7 @@ class RateTests extends TestCase{
         $this->assertSame(null,$this->rate->getAdjustments());
     }
 
-    protected function setUp(){
+    protected function setUp() : void {
         $response = '{
                 "price": {
                     "charges": {

@@ -325,7 +325,7 @@ class EditShipmentTests extends TestCase{
         $this->assertSame(0.00,$this->editShipment->getTaxesTotal());
     }
 
-    protected function setUp() {
+    protected function setUp() : void {
         $response = '{
         "id": 2950284,
         "tracking_number": null,

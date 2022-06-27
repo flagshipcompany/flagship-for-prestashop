@@ -19,6 +19,16 @@ abstract class ApiRequest{
         return $this;
     }
 
+    public function setHeader(string $key, string $value){
+        $this->headers[] = $key.": ".$value;
+        return $this; 
+    }
+
+    public function clearHeaders() {
+        $this->headers = [];
+        return $this;
+    }
+
     protected function api_request(string $url,array $json,string $apiToken,string $method, int $timeout, string $flagshipFor="", string $version="") : array
 
     {
@@ -80,10 +90,4 @@ abstract class ApiRequest{
         $this->setHeader("X-App-Name",$appName);
         return $this;
     }
-
-    private function setHeader(string $key, string $value){
-        $this->headers[] = $key.": ".$value;
-        return $this; 
-    }
-
 }

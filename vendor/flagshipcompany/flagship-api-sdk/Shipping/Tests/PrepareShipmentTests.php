@@ -319,7 +319,7 @@ class PrepareShipmentTests extends TestCase{
         $this->assertEquals($expected, $this->preparedShipment->getItemsDetails());
     }
 
-    protected function setUp() {
+    protected function setUp() : void {
         $response = '{
             "id": 2950226,
             "tracking_number": null,

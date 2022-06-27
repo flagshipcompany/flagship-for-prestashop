@@ -50,7 +50,7 @@ class GetPickupListsCollectionTests extends TestCase{
             $this->pickupList->getCancelledPickups();
         }
 
-        protected function setUp() {
+        protected function setUp() : void {
             $response = '[
 
             {

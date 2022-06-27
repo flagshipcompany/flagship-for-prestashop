@@ -50,7 +50,7 @@ class AvailableServicesTests extends TestCase{
         $this->assertInstanceOf(AvailableServicesCollection::class,$this->availableServices->getExpressServicesByCourier('ups'));
     }
 
-    protected function setUp(){
+    protected function setUp() : void {
 
         $response = '[
             {

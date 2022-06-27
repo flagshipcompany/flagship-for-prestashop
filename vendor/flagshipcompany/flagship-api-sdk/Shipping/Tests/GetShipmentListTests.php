@@ -86,7 +86,7 @@ class GetShipmentListTests extends TestCase{
         $this->assertSame("SAINT-LAURENT",$this->shipmentList->getByReceiverCompany("4 Designs")->first()->getReceiverCity());
     }
 
-    protected function setUp(){
+    protected function setUp() : void {
          $response = '[
             {
                 "id": 2950191,

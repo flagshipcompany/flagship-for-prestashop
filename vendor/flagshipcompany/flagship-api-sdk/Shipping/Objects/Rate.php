@@ -22,7 +22,7 @@ class Rate
     public function getTaxesTotal() : float
     {
         $total = 0.00;
-        if(!property_exists($this->rate,'price')){
+        if(!property_exists($this->rate,'price') || (property_exists($this->rate,'price') && $this->rate->price->taxes == NULL)){
             return 0.00;
         }
         foreach ($this->rate->price->taxes as $key => $value) {
@@ -58,7 +58,7 @@ class Rate
 
     public function getTaxesDetails() : array
     {
-        if(!property_exists($this->rate,'price')){
+        if(!property_exists($this->rate,'price') || (property_exists($this->rate,'price') && $this->rate->price->taxes == NULL)){
             return [];
         }
         foreach ($this->rate->price->taxes as $key => $value) {

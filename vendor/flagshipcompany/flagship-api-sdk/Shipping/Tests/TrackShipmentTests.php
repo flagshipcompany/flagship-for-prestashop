@@ -25,7 +25,7 @@ class TrackShipmentTests extends TestCase{
         $this->assertSame("2019-04-03 01:20:00",$this->trackShipment->getCourierUpdate());
     }
 
-    protected function setup(){
+    protected function setup() : void {
         $response = '{
             "shipment_id": "3243056",
             "current_status": "T",

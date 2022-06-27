@@ -113,7 +113,7 @@ class ConfirmManifestByIdTests extends TestCase{
         $this->assertSame("https://flagshipcompany.com/ship/3372200/labels/3074e7fa9637e74d999cd09ba4e7cae6804b6a14?document=therm",$this->manifest->getToDepotThermalLabel());
     }
 
-    protected function setUp(){
+    protected function setUp() : void {
 
         $response = '{
             "id": "23",

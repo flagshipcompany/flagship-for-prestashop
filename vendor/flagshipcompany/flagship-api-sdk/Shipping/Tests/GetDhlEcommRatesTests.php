@@ -8,7 +8,7 @@ use Flagship\Shipping\Exceptions\QuoteException;
 use Flagship\Shipping\Collections\RatesCollection;
 use Flagship\Shipping\Objects\Rate;
 
-class GetDhlEcommRatesTest extends TestCase{
+class GetDhlEcommRatesTests extends TestCase{
 
     public function testGetCheapest(){
         $this->assertNotNull($this->rates->getCheapest());
@@ -38,7 +38,7 @@ class GetDhlEcommRatesTest extends TestCase{
         $this->assertInstanceOf(RatesCollection::class, $this->rates->sortByTime());
     }
 
-    protected function setUp(){
+    protected function setUp() : void {
         $response = '[
         {
             "price": {

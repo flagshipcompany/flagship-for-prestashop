@@ -74,7 +74,7 @@ class GetManifestByIdTests extends TestCase{
 
     public function testGetTaxesTotal(){
         $this->assertNotNull($this->manifest->getTaxesTotal());
-        $this->assertSame(14.78,$this->manifest->getTaxesTotal());
+        $this->assertSame(14.78,round($this->manifest->getTaxesTotal(),2));
     }
 
     public function testGetToDepotId(){
@@ -113,7 +113,7 @@ class GetManifestByIdTests extends TestCase{
     }
 
 
-    protected function setUp(){
+    protected function setUp() : void {
 
         $response = '{
             "id": "20",

@@ -8,7 +8,7 @@ use \PHPUnit\Framework\TestCase;
 use Flagship\Shipping\Collections\ManifestListCollection;
 use Flagship\Shipping\Exceptions\ManifestListException;
 
-class GetManifestsListTest extends TestCase{
+class GetManifestsListTests extends TestCase{
 
     public function testGetByStatus(){
         $this->assertNotNull($this->manifestList->getByStatus('confirmed'));
@@ -18,7 +18,7 @@ class GetManifestsListTest extends TestCase{
         $this->assertTrue($this->manifestList->getByStatus('cancelled'));
     }
 
-    protected function setUp(){
+    protected function setUp() : void {
 
         $response = '[
             {

@@ -10,18 +10,18 @@ class CreateManifestTests extends TestCase{
 
     public function testGetName(){
         $this->assertNotNull($this->manifest->getName());
-        $this->assertInternalType('string', $this->manifest->getName());
+        $this->assertIsString($this->manifest->getName());
         $this->assertSame('myManifest',$this->manifest->getName());
     }
 
     public function testGetStatus(){
         $this->assertNotNull($this->manifest->getStatus());
-        $this->assertInternalType('string',$this->manifest->getStatus());
+        $this->assertIsString($this->manifest->getStatus());
     }
 
     public function testGetId(){
         $this->assertNotNull($this->manifest->getId());
-        $this->assertInternalType('int',$this->manifest->getId());
+        $this->assertIsInt($this->manifest->getId());
     }
 
     public function testGetToDepotShipment(){
@@ -84,7 +84,7 @@ class CreateManifestTests extends TestCase{
         $this->assertNull($this->manifest->getAllPrices());
     }
 
-    protected function setUp(){
+    protected function setUp() : void {
         $this->createManifestRequest = $this->getMockBuilder(CreateManifestRequest::class)
                           ->setConstructorArgs(['jhdgjhsgfjhsd','https://www.flagshipcompany.com',["name" => "testManifest"],'testing','1.0.11'])
                           ->setMethods(['execute'])

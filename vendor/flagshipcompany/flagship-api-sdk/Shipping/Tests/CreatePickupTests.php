@@ -145,7 +145,7 @@ class CreatePickupTests extends TestCase{
         $this->assertSame(FALSE,$this->pickup->isCancelled());
     }
 
-    protected function setUp(){
+    protected function setUp() : void {
 
         $response = '{
                 "id": "1276084",

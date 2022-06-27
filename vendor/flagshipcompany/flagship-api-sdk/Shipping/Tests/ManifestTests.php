@@ -61,7 +61,7 @@ class ManifestTests extends TestCase{
 
     public function testGetTaxesTotal(){
         $this->assertNotNull($this->manifest->getTaxesTotal());
-        $this->assertSame(14.78,$this->manifest->getTaxesTotal());
+        $this->assertSame(14.78,round($this->manifest->getTaxesTotal(),2));
     }
 
     public function testGetToDepotId(){
@@ -99,7 +99,7 @@ class ManifestTests extends TestCase{
         $this->assertSame("https://www.flagshipcompany.com/ship/3372195/labels/e5a146e501b543fd6de1c7289ce511f78c6d960c?document=therm",$this->manifest->getTodepotThermalLabel());
     }
 
-    protected function setup(){
+    protected function setup() : void {
         $response = '{
         "id": "20",
         "name": "completeManifest",

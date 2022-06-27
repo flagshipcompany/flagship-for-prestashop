@@ -16,7 +16,7 @@ class AssociateToDepotTests extends TestCase{
     }
     
 
-    protected function setUp(){
+    protected function setUp() : void {
         $this->associateToDepotRequest = $this->getMockBuilder(AssociateToDepotRequest::class)
             ->setConstructorArgs(['testToken','localhost',20,[],'test','1.0.11'])
             ->setMethods(['execute'])

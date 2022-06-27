@@ -280,7 +280,7 @@ class GetShipmentByIdTests extends TestCase{
 
     public function testGetTransitDetails(){
         $this->assertNotNull($this->shipment->getTransitDetails());
-        $this->assertInternalType('array',$this->shipment->getTransitDetails());
+        $this->assertIsArray($this->shipment->getTransitDetails());
     }
 
     public function testIsDocumentsOnly(){
@@ -296,7 +296,7 @@ class GetShipmentByIdTests extends TestCase{
     }
 
 
-    protected function setUp(){
+    protected function setUp() : void {
 
         $response = '{
             "id": 3372194,
