@@ -25,6 +25,6 @@
 
 <div class="panel">
     <p style="font-size:14px"><i class="icon icon-info-circle"></i>
-        All FlagShip courier rates are inclusive of taxes
+        All FlagShip courier rates are exclusive of taxes
     </p>
 </div>
