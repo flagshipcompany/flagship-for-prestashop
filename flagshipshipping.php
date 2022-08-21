@@ -313,8 +313,6 @@ class FlagshipShipping extends CarrierModule
             $cost = floatVal(Tools::substr($value, strpos($value, "-")+1));
             $cost += floatVal((Configuration::get("flagship_markup")/100) * $cost);
             $cost += floatVal(Configuration::get('flagship_fee'));
-            $taxes = ltrim(strrchr($value, "-"), "-");
-            $cost += floatVal($taxes);
             $shipping_cost=Tools::substr($value, 0, strpos($value, "-")) == $carrier->name ? $cost : $shipping_cost;
         }
         return $shipping_cost;
@@ -537,6 +535,7 @@ class FlagshipShipping extends CarrierModule
                         'col' => 4,
                         'type' => 'select',
                         'label' => $this->l('Test Environment'),
+                        'desc' =>  $this->l('Use FlagShip\'s test environment. Any shipments made in the test environment will not be shipped.'),
                         'name' => 'flagship_test_env',
                         'options' => [
                             'query' => [
@@ -566,19 +565,22 @@ class FlagshipShipping extends CarrierModule
                         'col' => 4,
                         'type' => 'text',
                         'name' => 'flagship_markup',
-                        'label' =>$this->l('Percentage Markup')
+                        'label' =>$this->l('Percentage Markup'),
+                        'desc' =>  $this->l('This percentage markup will be added to the rate quoted to the customer on your store front.'),
                     ],
                     [
                         'col' => 4,
                         'type' => 'text',
                         'label' => $this->l('Flat Handling Fee'),
-                        'name' => 'flagship_fee'
+                        'name' => 'flagship_fee',
+                        'desc' =>  $this->l('This flat fee will be added to the rate quoted to the customer on your store front.'),
                     ],
                     [
                         'col' => 4,
                         'type' => 'select',
                         'label' => $this->l('Use Packing Api'),
                         'name' => 'flagship_packing_api',
+                        'desc' =>  $this->l('If enabled, an algorithm will pack all products in the cart in the boxes provided below.'),
                         'options' => [
                             'query' => [
                                 [
@@ -598,6 +600,7 @@ class FlagshipShipping extends CarrierModule
                         'col' => 4,
                         'type' => 'select',
                         'label' => $this->l('Residential Shipments'),
+                        'desc' =>  $this->l('Mark all shipments as residential'),
                         'name' => 'flagship_residential',
                         'options' => [
                             'query' => [
@@ -618,6 +621,7 @@ class FlagshipShipping extends CarrierModule
                         'col' => 4,
                         'type' => 'select',
                         'label' => $this->l('Label Type'),
+                        'desc' =>  $this->l('Select whether you want a regular label or a thermal one.'),
                         'name' => 'flagship_label',
                         'options' => [
                             'query' => [
@@ -640,6 +644,7 @@ class FlagshipShipping extends CarrierModule
                         'col' => 4,
                         'type' => 'select',
                         'label' => $this->l('Show customer email on shipping label'),
+                        'desc' =>  $this->l('Select if you want to show customer email as reference on the shipping label'),
                         'name' => 'flagship_email_on_label',
                         'options' => [
                             'query' => [
@@ -1111,11 +1116,11 @@ class FlagshipShipping extends CarrierModule
         $packages = [];
         $items = [];
 
+        $boxes = $this->getBoxes();
+
         foreach ($products as $product) {
             $items = $this->getItemsByQty($product, $order, $items);
         }
-
-        $boxes = $this->getBoxes();
 
         if(!Configuration::get('flagship_packing_api') || count($boxes) == 0){ //use items as they are if boxes are not set
             $temp = $items;
@@ -1137,7 +1142,9 @@ class FlagshipShipping extends CarrierModule
             'units' => $this->getWeightUnits()
         ];
 
+        $this->logger->logDebug("Packing payload: ".json_encode($packingPayload));
         $packings = $flagship->packingRequest($packingPayload)->execute();
+        $this->logger->logDebug("Packing response: ".json_encode($packings));
         $packedItems = $this->getPackedItems($packings);
 
         $packages = [
@@ -1167,7 +1174,7 @@ class FlagshipShipping extends CarrierModule
                 'length' => $packing->getLength(),
                 'width' => $packing->getWidth(),
                 'height' => $packing->getHeight(),
-                'weight' => $packing->getWeight(),
+                'weight' => max($packing->getWeight(),1),
                 'description' => $packing->getBoxModel()
             ];
         }
@@ -1184,7 +1191,7 @@ class FlagshipShipping extends CarrierModule
                 "width"  => $product["width"] == 0 ? 1 : ceil($product["width"]),
                 "height" => $product["height"] == 0 ? 1 : ceil($product["height"]),
                 "length" => $product["depth"] == 0 ? 1 : ceil($product["depth"]),
-                "weight" => $product["weight"] == 0 ? 1 : $product["weight"],
+                "weight" => !Configuration::get('flagship_packing_api') ? max($product["weight"], 1) : $product["weight"],
                 "description"=>is_null($order) ? $product["name"] : $product["product_name"]
             ];
         }
