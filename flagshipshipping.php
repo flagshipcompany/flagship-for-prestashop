@@ -1119,6 +1119,7 @@ class FlagshipShipping extends CarrierModule
         $boxes = $this->getBoxes();
 
         foreach ($products as $product) {
+            if($product['is_virtual']) continue;
             $items = $this->getItemsByQty($product, $order, $items);
         }
 
@@ -1191,7 +1192,7 @@ class FlagshipShipping extends CarrierModule
                 "width"  => $product["width"] == 0 ? 1 : ceil($product["width"]),
                 "height" => $product["height"] == 0 ? 1 : ceil($product["height"]),
                 "length" => $product["depth"] == 0 ? 1 : ceil($product["depth"]),
-                "weight" => !Configuration::get('flagship_packing_api') ? max($product["weight"], 1) : $product["weight"],
+                "weight" => max($product["weight"], 1),
                 "description"=>is_null($order) ? $product["name"] : $product["product_name"]
             ];
         }
