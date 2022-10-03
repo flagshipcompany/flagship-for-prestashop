@@ -33,7 +33,7 @@ if (file_exists(__DIR__ . '/vendor/autoload.php')) {
 
 use Flagship\Shipping\Flagship;
 
-//NO Tailing slashes please
+//NO Trailing slashes please
 define('SMARTSHIP_WEB_URL', 'https://smartship-ng.flagshipcompany.com');
 define('SMARTSHIP_API_URL', 'https://api.smartship.io');
 define('SMARTSHIP_TEST_API_URL', 'https://test-api.smartship.io');
@@ -48,7 +48,7 @@ class FlagshipShipping extends CarrierModule
     {
         $this->name = 'flagshipshipping';
         $this->tab = 'shipping_logistics';
-        $this->version = '1.0.19';
+        $this->version = '1.0.20';
         $this->author = 'FlagShip Courier Solutions';
         $this->need_instance = 0;
 
