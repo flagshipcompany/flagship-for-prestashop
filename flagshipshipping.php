@@ -43,14 +43,16 @@ class FlagshipShipping extends CarrierModule
 {
     public $id_carrier;
     protected $config_form = false;
+    protected $url;
 
     public function __construct()
     {
         $this->name = 'flagshipshipping';
         $this->tab = 'shipping_logistics';
-        $this->version = '1.0.20';
+        $this->version = '1.0.21';
         $this->author = 'FlagShip Courier Solutions';
         $this->need_instance = 0;
+        $this->url = SMARTSHIP_WEB_URL;
 
         $this->logger = new FileLogger(0); //0 == debug level, logDebug() won’t work without this.
         $this->logger->setFilename(_PS_ROOT_DIR_."/var/logs/flagship.log");
@@ -114,27 +116,12 @@ class FlagshipShipping extends CarrierModule
                 )
             ');
 
-        $tab = new Tab();
-        $tab->active = 1;
-        $tab->class_name = 'AdminFlagshipShipping';
-        $tab->position = 3;
-        $tab->name = [];
-        foreach (Language::getLanguages(true) as $lang) {
-            $tab->name[$lang['id_lang']] = 'Convert FlagShip Shipments';
-        }
-        $tab->id_parent = (int) Tab::getIdFromClassName('SELL');
-        $tab->module = $this->name;
-        $tab->add();
-        $tab->save();
         $this->logger->logDebug("Flagship for prestashop installed");
         return parent::install();
     }
 
     public function uninstall()
     {
-        $id_tab = (int) Tab::getIdFromClassName('AdminFlagshipShipping');
-        $tab = new Tab($id_tab);
-        $tab->delete();
 
         Configuration::deleteByName('flagship_api_token');
         Configuration::deleteByName('flagship_fee');
@@ -212,15 +199,17 @@ class FlagshipShipping extends CarrierModule
     public function hookDisplayBackOfficeOrderActions(array $params)
     {
         $id_order = $params["id_order"];
-        $link = new Link();
+        // $link = new Link();
 
+        $this->url = Configuration::get('flagship_test_env') ? SMARTSHIP_TEST_WEB_URL : SMARTSHIP_WEB_URL;
         $shipmentId = $this->getShipmentId($id_order);
         $shipmentFlag = is_null($shipmentId) ? 0 : $shipmentId;
-
+        $convertUrl = $this->url."/shipping/$shipmentId/convert";
         $this->context->smarty->assign(array(
-            'url' => $link->getAdminLink('AdminFlagshipShipping'),
+            'url' => $convertUrl,
+            // $link->getAdminLink('AdminFlagshipShipping'),
             'shipmentFlag' => $shipmentFlag,
-            'SMARTSHIP_WEB_URL' => SMARTSHIP_WEB_URL,
+            'SMARTSHIP_WEB_URL' => $this->url,
             'orderId' => $id_order,
             'img_dir' => _PS_IMG_DIR_,
         ));
