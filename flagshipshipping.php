@@ -196,22 +196,25 @@ class FlagshipShipping extends CarrierModule
         return $output;
     }
 
+    // actionAdminOrdersTrackingNumberUpdate
+
     public function hookDisplayBackOfficeOrderActions(array $params)
     {
         $id_order = $params["id_order"];
-        // $link = new Link();
 
         $this->url = Configuration::get('flagship_test_env') ? SMARTSHIP_TEST_WEB_URL : SMARTSHIP_WEB_URL;
         $shipmentId = $this->getShipmentId($id_order);
         $shipmentFlag = is_null($shipmentId) ? 0 : $shipmentId;
         $convertUrl = $this->url."/shipping/$shipmentId/convert";
+        $shipmentData = null !== $shipmentId ? $this->getShipment($shipmentId) : [];
         $this->context->smarty->assign(array(
             'url' => $convertUrl,
-            // $link->getAdminLink('AdminFlagshipShipping'),
             'shipmentFlag' => $shipmentFlag,
             'SMARTSHIP_WEB_URL' => $this->url,
             'orderId' => $id_order,
             'img_dir' => _PS_IMG_DIR_,
+            'trackingNumber' => empty($shipmentData) ? '' : $shipmentData['shipment']->tracking_number,
+            'trackingUrl' => empty($shipmentData) ? '' : $this->getTrackingUrl($shipmentData)
         ));
         return $this->display(__FILE__, 'flagship.tpl');
     }
@@ -450,6 +453,7 @@ class FlagshipShipping extends CarrierModule
         $name = empty($addressTo->company) ? $addressTo->firstname : $addressTo->company;
         $isCommercial = Configuration::get('flagship_residential') ? false : true;
         $driverInstructions = Configuration::get('flagship_email_on_label') ? $customer->email : '';
+        $trackingEmail =  Configuration::get('flagship_tracking_email') ? $customer->email : Configuration::get('PS_SHOP_EMAIL');
 
         $to = [
             "name"=>substr($name,0,29),
@@ -470,6 +474,7 @@ class FlagshipShipping extends CarrierModule
             "signature_required"=>false,
             "reference"=>substr("PrestaShop Order# ".$orderId,0,29),
             "driver_instructions"=>substr($driverInstructions,0,29),
+            "shipment_tracking_emails"=> $trackingEmail
         ];
 
         $payment = [
@@ -628,8 +633,28 @@ class FlagshipShipping extends CarrierModule
                         ]
 
                     ],
-                ],
-                [
+                    [
+                        'col' => 4,
+                        'type' => 'select',
+                        'label' => $this->l('Use customer email as tracking'),
+                        'desc' =>  $this->l('Select if you want to use customer email as tracking email'),
+                        'name' => 'flagship_tracking_email',
+                        'options' => [
+                            'query' => [
+                                [
+                                    'key' => 0,
+                                    'name' => 'No'
+                                ],
+                                [
+                                    'key' => 1,
+                                    'name' => 'Yes'
+                                ]
+                            ],
+                            'id' => 'key',
+                            'name' => 'name',
+                        ]
+                    ],
+                    [
                         'col' => 4,
                         'type' => 'select',
                         'label' => $this->l('Show customer email on shipping label'),
@@ -650,6 +675,7 @@ class FlagshipShipping extends CarrierModule
                             'name' => 'name',
                         ]
                     ],
+                ],
                 'submit' => [
                     'title' => $this->l('Save'),
                 ],
@@ -724,6 +750,7 @@ class FlagshipShipping extends CarrierModule
             'flagship_residential' => Configuration::get('flagship_residential'),
             'flagship_email_on_label' => Configuration::get('flagship_email_on_label'),
             'flagship_packing_api' => Configuration::get('flagship_packing_api'),
+            'flagship_tracking_email' => Configuration::get('flagship_tracking_email'),
             'flagship_box_model' => '',
             'flagship_box_length' => '',
             'flagship_box_width' => '',
@@ -749,6 +776,7 @@ class FlagshipShipping extends CarrierModule
         $testEnv = empty(Tools::getValue('flagship_test_env')) ? 0 : Tools::getValue('flagship_test_env');
         $emailOnLabel = empty(Tools::getValue('flagship_email_on_label')) ? 0 : Tools::getValue('flagship_email_on_label');
         $packing = empty(Tools::getValue('flagship_packing_api')) ? 0 : Tools::getValue('flagship_packing_api');
+        $trackingEmail = empty(Tools::getValue('flagship_tracking_email')) ? 0 : Tools::getValue('flagship_tracking_email');
 
         if (is_string(Configuration::get('flagship_fee')) && is_string(Configuration::get('flagship_api_token')) && is_string(Configuration::get('flagship_markup')) ) { //fields exist in db
             $feeFlag = $fee != Configuration::get('flagship_fee') ?
@@ -761,6 +789,8 @@ class FlagshipShipping extends CarrierModule
                                 Configuration::updateValue('flagship_test_env', $testEnv) : 0;
             $emailOnLabel = $emailOnLabel != Configuration::get('flagship_email_on_label') ?
                                 Configuration::updateValue('flagship_email_on_label', $emailOnLabel) : 0;
+            $trackingEmail = $trackingEmail != Configuration::get('flagship_tracking_email') ?
+                                Configuration::updateValue('flagship_tracking_email', $trackingEmail) : 0;
             $packing = $packing != Configuration::get('flagship_packing_api') ?
                                 Configuration::updateValue('flagship_packing_api', $packing) : 0;
 
@@ -830,6 +860,10 @@ class FlagshipShipping extends CarrierModule
 
     protected function setEmailOnLabel(string $emailOnLabel) : int {
         return Configuration::updateValue('flagship_email_on_label', $emailOnLabel);
+    }
+
+    protected function setTrackingEmail(string $trackingEmail) : int {
+        return Configuration::updateValue('flagship_tracking_email', $trackingEmail);
     }
 
     protected function insertBoxDetails() : string
@@ -1196,4 +1230,48 @@ class FlagshipShipping extends CarrierModule
         ];
         return Db::getInstance()->insert('flagship_shipping', $data);
     }
+
+    protected function getShipment(int $shipmentId) : array {
+        $token = Configuration::get('flagship_api_token');
+        $url = $this->getBaseUrl();
+        $flagship = new Flagship($token, $url, 'Prestashop', _PS_VERSION_);
+        $shipment = $flagship->getShipmentByIdRequest($shipmentId)->execute();
+        return (array)$shipment;
+    }
+
+    protected function getTrackingUrl($shipment) : string {
+        $courier = $shipment['shipment']->service->courier_name;
+        $trackingNumber = $shipment['shipment']->tracking_number;
+        switch ($courier) {
+            case 'purolator':
+                $url = 'https://eshiponline.purolator.com/ShipOnline/Public/Track/TrackingDetails.aspx?pup=Y&pin='.$trackingNumber.'&lang=E';
+                break;
+            case 'ups':
+                $url = 'http://wwwapps.ups.com/WebTracking/track?HTMLVersion=5.0&loc=en_CA&Requester=UPSHome&trackNums='.$trackingNumber.'&track.x=Track';
+                break;
+            case 'gls':
+                $url = "https://gls-group.com/CA/en/send-and-receive/track-a-shipment/?match=$trackingNumber";
+                break;
+            case 'dhl':
+                $url = 'http://www.dhl.com/en/express/tracking.html?AWB='.$trackingNumber.'&brand=DHL';
+                break;
+            case 'fedex':
+                $url = 'http://www.fedex.com/Tracking?ascend_header=1&clienttype=dotcomreg&track=y&cntry_code=ca_english&language=english&tracknumbers='.$trackingNumber.'&action=1&language=null&cntry_code=ca_english';
+                break;
+            case 'canpar':
+                $url = 'https://www.canpar.com/en/track/TrackingAction.do?reference='.$trackingNumber.'&locale=en';
+                break;
+            case 'nationex':
+                $url = 'https://www.nationex.com/en/track/tracking-report/?tracking[]='.$trackingNumber;
+                break;
+            case 'canadapost':
+                $url = 'https://www.canadapost-postescanada.ca/track-reperage/en#/details/'.$trackingNumber;
+                break;
+            default:
+                $url = "https://www.flagshipcompany.com/log-in/";
+                break;
+        }
+        return $url;
+    }
+
 }

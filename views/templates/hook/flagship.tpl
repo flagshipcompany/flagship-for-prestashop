@@ -27,11 +27,23 @@
 	var shipmentId = "{$shipmentFlag|escape:'htmlall':'UTF-8'}";
 </script>
 <div>
+
 {if $shipmentFlag}
-	<span class="success font-weight-bold">FlagShip Shipment: </span><a href="{$url|escape:'htmlall':'UTF-8'}" target="_blank" class="shipmentLink">{$shipmentFlag|escape:'htmlall':'UTF-8'}</a>
+	{if !empty($trackingNumber) }
+		Tracking Number: {$trackingNumber|escape:'htmlall':'UTF-8'}
+		<br/>
+		<a class="btn btn-default" href="{$trackingUrl|escape:'htmlall':'UTF-8'}" target="_blank" class="shipmentLink">
+			Track your shipment
+		</a>
+	{else}
+	<span class="success font-weight-bold">FlagShip Shipment: </span>
+	<a href="{$url|escape:'htmlall':'UTF-8'}" target="_blank" class="shipmentLink">
+	{$shipmentFlag|escape:'htmlall':'UTF-8'}
+	</a>
 	<br/>
 	<a class="btn btn-default send_to_flagship" id="update_shipment">Update Shipment</a>
 	<a class="btn btn-default convert" id="convert_shipment" href="{$url|escape:'htmlall':'UTF-8'}" target="_blank">Convert Shipment</a>
+	{/if}
 {else}
 	<a href="#" class="btn btn-default send_to_flagship" id="send_to_flagship"><i class="icon-truck"></i>Send To FlagShip</a>
 {/if}
