@@ -472,7 +472,7 @@ class FlagshipShipping extends CarrierModule
 
         $options = [
             "signature_required"=>false,
-            "reference"=>substr("PrestaShop Order# ".$orderId,0,29),
+            "reference"=>substr(substr(Configuration::get('PS_SHOP_NAME'), 0, 17)." Order#".$orderId, 0, 29),
             "driver_instructions"=>substr($driverInstructions,0,29),
             "shipment_tracking_emails"=> $trackingEmail
         ];
