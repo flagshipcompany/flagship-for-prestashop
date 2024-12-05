@@ -3,7 +3,7 @@
         'name' => 'flagshipcompany/flagship-for-prestashop',
         'pretty_version' => 'dev-master',
         'version' => 'dev-master',
-        'reference' => 'd5d26c80d28bf1690c715b670a879d7475f73b1f',
+        'reference' => 'c7556adc756aff9e1df7cc4efa5902d3cb06de8f',
         'type' => 'prestashop-module',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -22,7 +22,7 @@
         'flagshipcompany/flagship-for-prestashop' => array(
             'pretty_version' => 'dev-master',
             'version' => 'dev-master',
-            'reference' => 'd5d26c80d28bf1690c715b670a879d7475f73b1f',
+            'reference' => 'c7556adc756aff9e1df7cc4efa5902d3cb06de8f',
             'type' => 'prestashop-module',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),

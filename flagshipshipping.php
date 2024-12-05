@@ -49,7 +49,7 @@ class FlagshipShipping extends CarrierModule
     {
         $this->name = 'flagshipshipping';
         $this->tab = 'shipping_logistics';
-        $this->version = '1.0.22';
+        $this->version = '1.0.23';
         $this->author = 'FlagShip Courier Solutions';
         $this->need_instance = 0;
         $this->url = SMARTSHIP_WEB_URL;
@@ -129,7 +129,15 @@ class FlagshipShipping extends CarrierModule
         Configuration::deleteByName('flagship_residential');
         Configuration::deleteByName('flagship_test_env');
 
-        Db::getInstance()->execute('DROP TABLE `'._DB_PREFIX_.'flagship_shipping`');
+        $query = new DbQuery();
+        $query->select('*')->from('flagship_shipping');
+
+        $rows = Db::getInstance()->executeS($query);
+
+        if (count($rows) == 0) {
+            Db::getInstance()->execute('DROP TABLE `'._DB_PREFIX_.'flagship_shipping`');
+        }
+        
         Db::getInstance()->execute('DROP TABLE `'._DB_PREFIX_.'flagship_boxes`');
         Db::getInstance()->execute('DELETE FROM `'._DB_PREFIX_.'carrier` WHERE external_module_name = "flagshipshipping"');
         $this->logger->logDebug("Flagship for prestashop uninstalled");
@@ -188,15 +196,13 @@ class FlagshipShipping extends CarrierModule
 
         $this->context->smarty->assign('module_dir', $this->_path);
         $this->context->smarty->assign('boxes', $this->getBoxesString());
-        $this->context->smarty->assign('units', $this->getWeightUnits());
+        $this->context->smarty->assign('units', $this->getStoreUnits());
         $output .= $this->context->smarty->fetch($this->local_path.'views/templates/admin/note.tpl');
         $output .= $this->renderForm();
         $output .= $this->context->smarty->fetch($this->local_path.'views/templates/admin/boxes.tpl');
         $output .= $this->renderBoxesForm();
         return $output;
     }
-
-    // actionAdminOrdersTrackingNumberUpdate
 
     public function hookDisplayBackOfficeOrderActions(array $params)
     {
@@ -427,6 +433,13 @@ class FlagshipShipping extends CarrierModule
         );
 
         return $helper->generateForm([$this->getBoxesForm()]);
+    }
+
+    protected function getStoreUnits()
+    {
+        $units = Configuration::get("PS_DIMENSION_UNIT");
+        $units .= ",".Configuration::get("PS_WEIGHT_UNIT");
+        return $units;
     }
 
     protected function getPayloadForShipment(int $orderId) : array
@@ -688,7 +701,9 @@ class FlagshipShipping extends CarrierModule
         return [
             'form' => [
                 'legend' => [
-                    'title' => $this->l('Add New Box (Units: '.$this->getWeightUnits().')'),
+                    'title' => $this->l('Add New Box (Units: '
+                                .Configuration::get('PS_DIMENSION_UNIT').','
+                                .Configuration::get('PS_WEIGHT_UNIT').')'),
                     'icon' => 'icon-plus-circle'
                 ],
                 'input' => [
@@ -898,7 +913,6 @@ class FlagshipShipping extends CarrierModule
         $length = $length/2.54;
         $width = $width/2.54;
         $height = $height/2.54;
-
         $girth = 2*$width + 2*$height;
 
         return $length + $girth;
@@ -1123,11 +1137,11 @@ class FlagshipShipping extends CarrierModule
         foreach ($rows as $row) {
             $boxes[] = [
                 "box_model" => $row["model"],
-                "length" => $row["length"],
-                "width" => $row["width"],
-                "height" => $row["height"],
-                "weight" => $row["weight"],
-                "max_weight" => $row["max_weight"]
+                "length" => ceil($this->getDimension($row["length"])),
+                "width" => ceil($this->getDimension($row["width"])),
+                "height" => ceil($this->getDimension($row["height"])),
+                "weight" => $this->getWeight($row["weight"]),
+                "max_weight" => $this->getWeight($row["max_weight"])
             ];
         }
         return $boxes;
@@ -1151,7 +1165,7 @@ class FlagshipShipping extends CarrierModule
 
             return [
                 'items' => $temp,
-                "units" => $this->getWeightUnits(),
+                "units" => "imperial",
                 "type"  => "package",
                 "content" => "goods"
             ];
@@ -1163,7 +1177,7 @@ class FlagshipShipping extends CarrierModule
         $packingPayload = [
             'items' => $items,
             'boxes' => $boxes,
-            'units' => $this->getWeightUnits()
+            'units' => "imperial"
         ];
 
         $this->logger->logDebug("Packing payload: ".json_encode($packingPayload));
@@ -1173,7 +1187,7 @@ class FlagshipShipping extends CarrierModule
 
         $packages = [
             "items" => $packedItems,
-            "units" => $this->getWeightUnits(),
+            "units" => "imperial",
             "type"  => "package",
             "content" => "goods"
         ];
@@ -1212,14 +1226,39 @@ class FlagshipShipping extends CarrierModule
 
         for ($i=0; $i < $qty; $i++) {
             $items[] = [
-                "width"  => $product["width"] == 0 ? 1 : ceil($product["width"]),
-                "height" => $product["height"] == 0 ? 1 : ceil($product["height"]),
-                "length" => $product["depth"] == 0 ? 1 : ceil($product["depth"]),
-                "weight" => max($product["weight"], 1),
+                "width"  => $this->getDimension($product["width"]),
+                "height" => $this->getDimension($product["height"]),
+                "length" => $this->getDimension($product["depth"]),
+                "weight" => $this->getWeight($product["weight"]),
                 "description"=>is_null($order) ? $product["name"] : $product["product_name"]
             ];
         }
         return $items;
+    }
+
+    protected function getDimension($dimension)
+    {
+        if(Configuration::get('PS_DIMENSION_UNIT') === 'cm') {
+            $cmInches = 0.393701;
+            $dimension  = $dimension * $cmInches;
+        }
+        if(!Configuration::get('flagship_packing_api')) {
+            $dimension = max(ceil($dimension),1);
+        }
+        return $dimension;
+    }
+
+    protected function getWeight($weight)
+    {
+        if(Configuration::get('PS_WEIGHT_UNIT') === 'kg') {
+            $kgLbs = 2.20462;
+            $weight = $weight * $kgLbs;
+        }
+
+        if(!Configuration::get('flagship_packing_api')) {
+            $weight = max(ceil($weight),1);
+        }
+        return $weight;
     }
 
     protected function updateOrder(int $shipmentId, int $orderId) : bool
