@@ -627,28 +627,6 @@ class FlagshipShipping extends CarrierModule
                     [
                         'col' => 4,
                         'type' => 'select',
-                        'label' => $this->l('Label Type'),
-                        'desc' =>  $this->l('Select whether you want a regular label or a thermal one.'),
-                        'name' => 'flagship_label',
-                        'options' => [
-                            'query' => [
-                                [
-                                    'key' => 0,
-                                    'name' => 'Thermal'
-                                ],
-                                [
-                                    'key' => 1,
-                                    'name' => 'Regular'
-                                ]
-                            ],
-                            'id' => 'key',
-                            'name' => 'name',
-                        ]
-
-                    ],
-                    [
-                        'col' => 4,
-                        'type' => 'select',
                         'label' => $this->l('Use customer email as tracking'),
                         'desc' =>  $this->l('Select if you want to use customer email as tracking email'),
                         'name' => 'flagship_tracking_email',
