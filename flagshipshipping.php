@@ -49,7 +49,7 @@ class FlagshipShipping extends CarrierModule
     {
         $this->name = 'flagshipshipping';
         $this->tab = 'shipping_logistics';
-        $this->version = '1.0.23';
+        $this->version = '1.0.24';
         $this->author = 'FlagShip Courier Solutions';
         $this->need_instance = 0;
         $this->url = SMARTSHIP_WEB_URL;
@@ -74,12 +74,11 @@ class FlagshipShipping extends CarrierModule
         $this->confirmUninstall = $this->l('Uninstalling FlagShip will remove all shipments.');
         $this->confirmUninstall .= $this->l(' Are you sure you want to uninstall?');
 
-        $this->ps_versions_compliancy = array('min' => '1.6', 'max' => _PS_VERSION_);
+        $this->ps_versions_compliancy = array('min' => '1.7.8', 'max' => _PS_VERSION_);
 
-        $this->registerHook('displayBackOfficeOrderActions');
+        $this->registerHook('displayAdminOrderSide');
         $this->registerHook('actionValidateCustomerAddressForm');
         $this->registerHook('actionCartSave');
-        $this->registerHook('displayAdminAfterHeader');
     }
 
     /**
@@ -289,6 +288,7 @@ class FlagshipShipping extends CarrierModule
             $str = $this->getRatesString($ratesArray);
             Context::getContext()->cookie->rate = $str;
         }
+
         return $shipping_cost;
     }
 
@@ -299,6 +299,7 @@ class FlagshipShipping extends CarrierModule
             $str .= implode("-", $value).",";
         }
         $str = rtrim($str);
+
         return $str;
     }
 
@@ -313,14 +314,17 @@ class FlagshipShipping extends CarrierModule
             $cost += floatVal(Configuration::get('flagship_fee'));
             $shipping_cost=Tools::substr($value, 0, strpos($value, "-")) == $carrier->name ? $cost : $shipping_cost;
         }
+        
         return $shipping_cost;
     }
 
     protected function getCouriers($rate){
         $couriers = [];
         foreach ($rate as $value) {
-            $couriers[] = Tools::substr($value, 0, strpos($value, "-"));
+            $service = Tools::substr($value, 0, strpos($value, "-"));
+            $couriers[] = strcasecmp($service, 'FedEx') === 0 ? 'FedEx '.$service : $service;
         }
+
         return $couriers;
     }
 
@@ -333,14 +337,15 @@ class FlagshipShipping extends CarrierModule
     {
         unset(Context::getContext()->cookie->rates);
         unset(Context::getContext()->cookie->rate);
+        
         return true;
     }
 
     public function hookActionCartSave() : bool
     {
-
         unset(Context::getContext()->cookie->rates);
         unset(Context::getContext()->cookie->rate);
+
         return true;
     }
 
@@ -744,12 +749,6 @@ class FlagshipShipping extends CarrierModule
             'flagship_email_on_label' => Configuration::get('flagship_email_on_label'),
             'flagship_packing_api' => Configuration::get('flagship_packing_api'),
             'flagship_tracking_email' => Configuration::get('flagship_tracking_email'),
-            'flagship_box_model' => '',
-            'flagship_box_length' => '',
-            'flagship_box_width' => '',
-            'flagship_box_height' => '',
-            'flagship_box_weight' => '',
-            'flagship_box_max_weight' => ''
         ];
     }
 
@@ -1220,7 +1219,7 @@ class FlagshipShipping extends CarrierModule
             $cmInches = 0.393701;
             $dimension  = $dimension * $cmInches;
         }
-        if(!Configuration::get('flagship_packing_api')) {
+        if(!Configuration::get('flagship_packing_api') || 0 == $dimension ) {
             $dimension = max(ceil($dimension),1);
         }
         return $dimension;
@@ -1233,7 +1232,7 @@ class FlagshipShipping extends CarrierModule
             $weight = $weight * $kgLbs;
         }
 
-        if(!Configuration::get('flagship_packing_api')) {
+        if(!Configuration::get('flagship_packing_api') || 0 == $weight) {
             $weight = max(ceil($weight),1);
         }
         return $weight;
