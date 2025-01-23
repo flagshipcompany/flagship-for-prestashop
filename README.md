@@ -3,15 +3,15 @@
 PrestaShop module that allows you to ship with FlagShip. We strongly recommend you to use the latest version of PrestaShop.
 
 
-NOTE: FlagShip for Prestashop requires you to increase PHP upload_max_filesize to at least 3M. This can be done in your php.ini. Based on your server, the location of thsi file may vary. For apache, the file can be found at /etc/php/apache2/php.ini. For nginx, it is at /etc/php/7.1/fpm/php.ini
+NOTE: FlagShip for Prestashop requires you to increase PHP upload_max_filesize to at least 3M. This can be done in your php.ini. Based on your server, the location of this file may vary. For apache, the file can be found at /etc/php/apache2/php.ini. For nginx, it is at /etc/php/7.4/fpm/php.ini
 
 # Requirements
 
-We recommend using the latest version of PHP. The minimum requirement is PHP 7.1
+We recommend using the latest version of PHP. The minimum requirement is PHP 7.4
 
-# Compatibility
+# Compatibility and support
 
-Compatible with PrestaShop 1.7.x
+Compatible with PrestaShop 1.7.x and Prestashop 8. In case of any issues, please send an email to developers@flagshipcompany.com
 
 # Installation
 
@@ -64,7 +64,6 @@ Customer can select the shipping method.
 
 Admin gets an option to Send orders to FlagShip.
 
-![Image of Order](https://github.com/flagshipcompany/flagship-for-prestashop/blob/master/views/img/order.png)
 
 To change the transit time for a carrier
 ![Image of Edit Carrier](https://github.com/flagshipcompany/flagship-for-prestashop/blob/master/views/img/editCarrier.jpg)
