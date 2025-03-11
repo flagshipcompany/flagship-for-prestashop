@@ -49,7 +49,7 @@ class FlagshipShipping extends CarrierModule
     {
         $this->name = 'flagshipshipping';
         $this->tab = 'shipping_logistics';
-        $this->version = '1.0.24';
+        $this->version = '1.0.25';
         $this->author = 'FlagShip Courier Solutions';
         $this->need_instance = 0;
         $this->url = SMARTSHIP_WEB_URL;
@@ -260,8 +260,15 @@ class FlagshipShipping extends CarrierModule
         }
     }
 
-    public function getOrderShippingCost($params, $shipping_cost) //do not use return type or argument type
+    //do not use return type or argument type
+    public function getOrderShippingCost($params, $shipping_cost)
     {
+        $currentController = Context::getContext()->controller->php_self;
+
+        if (str_contains($currentController, 'order-detail')) {
+            return $shipping_cost;
+        }
+
         $id_address_delivery = Context::getContext()->cart->id_address_delivery;
         $address = new Address($id_address_delivery);
         if ($id_address_delivery == 0) {
