@@ -31,6 +31,8 @@ if (file_exists(__DIR__ . '/vendor/autoload.php')) {
     include_once __DIR__ . '/vendor/autoload.php';
 }
 
+use Flagship\Shipping\Exceptions\GetShipmentByIdException;
+use Flagship\Shipping\Exceptions\PackingException;
 use Flagship\Shipping\Flagship;
 
 //NO Trailing slashes please
@@ -49,7 +51,7 @@ class FlagshipShipping extends CarrierModule
     {
         $this->name = 'flagshipshipping';
         $this->tab = 'shipping_logistics';
-        $this->version = '1.0.25';
+        $this->version = '1.0.26';
         $this->author = 'FlagShip Courier Solutions';
         $this->need_instance = 0;
         $this->url = SMARTSHIP_WEB_URL;
@@ -206,7 +208,6 @@ class FlagshipShipping extends CarrierModule
     public function hookDisplayBackOfficeOrderActions(array $params)
     {
         $id_order = $params["id_order"];
-
         $this->url = Configuration::get('flagship_test_env') ? SMARTSHIP_TEST_WEB_URL : SMARTSHIP_WEB_URL;
         $shipmentId = $this->getShipmentId($id_order);
         $shipmentFlag = is_null($shipmentId) ? 0 : $shipmentId;
@@ -215,6 +216,8 @@ class FlagshipShipping extends CarrierModule
         $this->context->smarty->assign(array(
             'url' => $convertUrl,
             'shipmentFlag' => $shipmentFlag,
+            'isDeleted' => null === $shipmentData ? true : false,
+            'isNew' => count($shipmentData) == 0 ? true : false,
             'SMARTSHIP_WEB_URL' => $this->url,
             'orderId' => $id_order,
             'img_dir' => _PS_IMG_DIR_,
@@ -263,6 +266,10 @@ class FlagshipShipping extends CarrierModule
     //do not use return type or argument type
     public function getOrderShippingCost($params, $shipping_cost)
     {
+        if (Cache::isStored('packagesCount') && Cache::retrieve('packagesCount') == 0) {
+            return false;
+        }
+
         $currentController = Context::getContext()->controller->php_self;
 
         if (str_contains($currentController, 'order-detail')) {
@@ -274,6 +281,7 @@ class FlagshipShipping extends CarrierModule
         if ($id_address_delivery == 0) {
             return $shipping_cost;
         }
+       
         $carrier = new Carrier($this->id_carrier);
         if (isset(Context::getContext()->cookie->rates)) {
             $rate = explode(",", Context::getContext()->cookie->rate);
@@ -313,8 +321,6 @@ class FlagshipShipping extends CarrierModule
     protected function getShippingCost(array $rate, Carrier $carrier) : float
     {
         $shipping_cost = 0.00;
-        $costs = [];
-        $shippingCosts = [];
         foreach ($rate as $value) {
             $cost = floatVal(Tools::substr($value, strpos($value, "-")+1));
             $cost += floatVal((Configuration::get("flagship_markup")/100) * $cost);
@@ -1164,19 +1170,26 @@ class FlagshipShipping extends CarrierModule
             'units' => "imperial"
         ];
 
-        $this->logger->logDebug("Packing payload: ".json_encode($packingPayload));
-        $packings = $flagship->packingRequest($packingPayload)->execute();
-        $this->logger->logDebug("Packing response: ".json_encode($packings));
-        $packedItems = $this->getPackedItems($packings);
+        try{
+            $this->logger->logDebug("Packing payload: ".json_encode($packingPayload));
+            $packings = $flagship->packingRequest($packingPayload)->execute();
+            $this->logger->logDebug("Packing response: ".json_encode($packings));
+            $packedItems = $this->getPackedItems($packings);
 
-        $packages = [
-            "items" => $packedItems,
-            "units" => "imperial",
-            "type"  => "package",
-            "content" => "goods"
-        ];
+            $packages = [
+                "items" => $packedItems,
+                "units" => "imperial",
+                "type"  => "package",
+                "content" => "goods"
+            ];
 
-        return $packages;
+            return $packages;
+        } catch (PackingException $e) {
+            $this->logger->logError("Error packing items: ".$e->getMessage());
+            Cache::store('packagesCount', 0);
+            return [];
+        }
+        
     }
 
     protected function getPackedItems(\Flagship\Shipping\Collections\PackingCollection $packings) : array
@@ -1258,8 +1271,14 @@ class FlagshipShipping extends CarrierModule
         $token = Configuration::get('flagship_api_token');
         $url = $this->getBaseUrl();
         $flagship = new Flagship($token, $url, 'Prestashop', _PS_VERSION_);
-        $shipment = $flagship->getShipmentByIdRequest($shipmentId)->execute();
-        return (array)$shipment;
+        try{
+            $request = $flagship->getShipmentByIdRequest($shipmentId);
+            return (array)$request->execute();
+        } catch (GetShipmentByIdException $e) {
+            $this->logger->logError("Error getting shipment: ".$e->getMessage());
+            return [];
+        }
+        
     }
 
     protected function getTrackingUrl($shipment) : string {
