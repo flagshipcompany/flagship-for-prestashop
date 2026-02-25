@@ -18,7 +18,7 @@ We recommend using the latest version of PHP. The minimum requirement is the sam
 
 Compatible with PrestaShop 1.7.x and Prestashop 8. In case of any issues, please send an email to developers@flagshipcompany.com
 
-##### Please note that this module does not support Prestashop 9
+#### Please note that this module does not support Prestashop 9
 
 # Installation
 
