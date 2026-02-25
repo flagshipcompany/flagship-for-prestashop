@@ -7,11 +7,18 @@ NOTE: FlagShip for Prestashop requires you to increase PHP upload_max_filesize t
 
 # Requirements
 
-We recommend using the latest version of PHP. The minimum requirement is PHP 7.4
+We recommend using the latest version of PHP. The minimum requirement is the same version of PHP that your Prestashop installation supports.
+
+| Prestashop     | PHP | 
+|----------------|-----|
+| 1.7.x          | 7.4 |
+| 8.0.x.         | 8.0 |
 
 # Compatibility and support
 
 Compatible with PrestaShop 1.7.x and Prestashop 8. In case of any issues, please send an email to developers@flagshipcompany.com
+
+##### Please note that this module does not support Prestashop 9
 
 # Installation
 
