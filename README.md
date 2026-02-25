@@ -12,7 +12,7 @@ We recommend using the latest version of PHP. The minimum requirement is the sam
 | Prestashop     | PHP | 
 |----------------|-----|
 | 1.7.x          | 7.4 |
-| 8.0.x.         | 8.0 |
+| 8.0.x          | 8.0 |
 
 # Compatibility and support
 
