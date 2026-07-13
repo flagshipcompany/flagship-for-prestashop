@@ -31,9 +31,7 @@ if (file_exists(__DIR__ . '/vendor/autoload.php')) {
     include_once __DIR__ . '/vendor/autoload.php';
 }
 
-use Flagship\Shipping\Exceptions\GetShipmentByIdException;
-use Flagship\Shipping\Exceptions\PackingException;
-use Flagship\Shipping\Flagship;
+require_once __DIR__ . '/flagshipApiClient.php';
 
 //NO Trailing slashes please
 define('SMARTSHIP_WEB_URL', 'https://smartship-ng.flagshipcompany.com');
@@ -45,13 +43,13 @@ class FlagshipShipping extends CarrierModule
 {
     public $id_carrier;
     protected $config_form = false;
-    protected $url;
+    public $url;
 
     public function __construct()
     {
         $this->name = 'flagshipshipping';
         $this->tab = 'shipping_logistics';
-        $this->version = '1.0.26';
+        $this->version = '2.0.0';
         $this->author = 'FlagShip Courier Solutions';
         $this->need_instance = 0;
         $this->url = SMARTSHIP_WEB_URL;
@@ -82,11 +80,6 @@ class FlagshipShipping extends CarrierModule
         $this->registerHook('actionValidateCustomerAddressForm');
         $this->registerHook('actionCartSave');
     }
-
-    /**
-     * Don't forget to create update methods if needed:
-     * http://doc.prestashop.com/display/PS16/Enabling+the+Auto-Update
-     */
 
     public function install()
     {
@@ -123,12 +116,12 @@ class FlagshipShipping extends CarrierModule
 
     public function uninstall()
     {
-
         Configuration::deleteByName('flagship_api_token');
         Configuration::deleteByName('flagship_fee');
         Configuration::deleteByName('flagship_markup');
         Configuration::deleteByName('flagship_residential');
         Configuration::deleteByName('flagship_test_env');
+        Configuration::deleteByName('flagship_email_on_label');
 
         $query = new DbQuery();
         $query->select('*')->from('flagship_shipping');
@@ -142,39 +135,8 @@ class FlagshipShipping extends CarrierModule
         Db::getInstance()->execute('DROP TABLE `'._DB_PREFIX_.'flagship_boxes`');
         Db::getInstance()->execute('DELETE FROM `'._DB_PREFIX_.'carrier` WHERE external_module_name = "flagshipshipping"');
         $this->logger->logDebug("Flagship for prestashop uninstalled");
+
         return parent::uninstall();
-    }
-
-    public function hookDisplayAdminAfterHeader(array $params)
-    {
-        $curl = curl_init();
-
-        curl_setopt_array($curl, array(
-          CURLOPT_URL => "https://api.github.com/repos/flagshipcompany/flagship-for-prestashop/releases/latest",
-          CURLOPT_RETURNTRANSFER => true,
-          CURLOPT_ENCODING => "",
-          CURLOPT_MAXREDIRS => 10,
-          CURLOPT_TIMEOUT => 0,
-          CURLOPT_FOLLOWLOCATION => true,
-          CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
-          CURLOPT_CUSTOMREQUEST => "GET",
-          CURLOPT_USERAGENT => " ",
-        ));
-
-	$response = json_decode(curl_exec($curl),True);
-
-	curl_close($curl);
-	$latestTag = array_key_exists("tag_name",$response) ? Tools::substr($response["tag_name"], 1) : 0;
-
-        $latestTagNumber = strrchr($latestTag,".");
-        $versionNumber = strrchr($this->version, ".");
-
-        $tagMismatch = $latestTagNumber > $versionNumber ? 1 : 0;
-
-        $this->context->smarty->assign(array(
-            'tagMismatch' => $tagMismatch
-        ));
-        return $this->display(__FILE__,'notification.tpl');
     }
 
     /**
@@ -191,8 +153,16 @@ class FlagshipShipping extends CarrierModule
             $output .= $this->postProcess();
         }
 
-        if (((bool)Tools::isSubmit('submit'.$this->name.'BoxModule')) == true) {
-            $output .= $this->insertBoxDetails();
+        if (Tools::isSubmit('submitFlagshipBox')) {
+
+            Db::getInstance()->insert('flagship_boxes', [
+                'model'      => Tools::getValue('model'),
+                'length'     => (float)Tools::getValue('length'),
+                'width'      => (float)Tools::getValue('width'),
+                'height'     => (float)Tools::getValue('height'),
+                'weight'     => (float)Tools::getValue('weight'),
+                'max_weight' => (float)Tools::getValue('max_weight'),
+            ]);
         }
 
         $this->context->smarty->assign('module_dir', $this->_path);
@@ -213,6 +183,7 @@ class FlagshipShipping extends CarrierModule
         $shipmentFlag = is_null($shipmentId) ? 0 : $shipmentId;
         $convertUrl = $this->url."/shipping/$shipmentId/convert";
         $shipmentData = null !== $shipmentId ? $this->getShipment($shipmentId) : [];
+        
         $this->context->smarty->assign(array(
             'url' => $convertUrl,
             'shipmentFlag' => $shipmentFlag,
@@ -221,46 +192,44 @@ class FlagshipShipping extends CarrierModule
             'SMARTSHIP_WEB_URL' => $this->url,
             'orderId' => $id_order,
             'img_dir' => _PS_IMG_DIR_,
-            'trackingNumber' => empty($shipmentData) ? '' : $shipmentData['shipment']->tracking_number,
+            'trackingNumber' => empty($shipmentData) ? '' : $shipmentData['tracking_number'],
             'trackingUrl' => empty($shipmentData) ? '' : $this->getTrackingUrl($shipmentData)
         ));
+
         return $this->display(__FILE__, 'flagship.tpl');
     }
 
     public function prepareShipment(string $token, int $orderId) : string
     {
         $url = $this->getBaseUrl();
-        try {
-            $storeName = $this->context->shop->name;
-            $flagship = new Flagship($token, $url, 'Prestashop', _PS_VERSION_);
-            $payload = $this->getPayloadForShipment($orderId);
-            $this->logger->logDebug("Payload for prepare shipment: ".json_encode($payload));
-            $prepareShipment = $flagship->prepareShipmentRequest($payload)->setStoreName($storeName)->setOrderId($orderId);
-            $prepareShipment = $prepareShipment->execute();
-            $shipmentId = $prepareShipment->shipment->id;
+    
+        $flagship = new FlagshipApiClient($token, $url, 'Prestashop', _PS_VERSION_);
+        $payload = $this->getPayloadForShipment($orderId);
+        $this->logger->logDebug("Payload for prepare shipment: ".json_encode($payload));
+        $shipment = $flagship->prepareShipment($payload);
+        if(!empty($this->validateResponse($shipment))) {
+            $shipmentId = $shipment['id'];
             $this->logger->logDebug("Flagship shipment prepared for order id: ".$orderId);
             $this->updateOrder($shipmentId, $orderId);
             return $this->displayConfirmation('FlagShip Shipment Prepared : '.$shipmentId);
-        } catch (Exception $e) {
-            return $this->displayError($e->getMessage());
         }
+
+        return $this->displayError('Error preparing shipment. Please check the logs for more details.');
     }
 
     public function updateShipment(string $token, int $orderId, int $shipmentId) : string
     {
         $url = $this->getBaseUrl();
-        try {
-            $storeName = $this->context->shop->name;
-            $flagship = new Flagship($token, $url, 'Prestashop', _PS_VERSION_);
-            $payload = $this->getPayloadForShipment($orderId);
-            $this->logger->logDebug("Payload for upload shipment: ".json_encode($payload));
-            $updateShipment = $flagship->editShipmentRequest($payload, $shipmentId)->setStoreName($storeName)->setOrderId($orderId);
-            $updatedShipment = $updateShipment->execute();
-            $updatedShipmentId = $updatedShipment->shipment->id;
+        $flagship = new FlagshipApiClient($token, $url, 'Prestashop', _PS_VERSION_);
+        $payload = $this->getPayloadForShipment($orderId);
+        $this->logger->logDebug("Payload for upload shipment: ".json_encode($payload));
+        $updateShipment = $flagship->updateShipment($shipmentId, $payload);
+        if(!empty($this->validateResponse($updateShipment))) {
+            $updatedShipmentId = $updateShipment['id'];
             return $this->displayConfirmation('Updated! FlagShip Shipment: '.$updatedShipmentId);
-        } catch (Exception $e) {
-            return $this->displayError($e->getMessage());
         }
+    
+        return $this->displayError('Error updating shipment. Please check the logs for more details.');
     }
 
     //do not use return type or argument type
@@ -286,18 +255,20 @@ class FlagshipShipping extends CarrierModule
         if (isset(Context::getContext()->cookie->rates)) {
             $rate = explode(",", Context::getContext()->cookie->rate);
             $couriers = $this->getCouriers($rate);
+            
             return !in_array($carrier->name, $couriers) ? false : $this->getShippingCost($rate, $carrier);
         }
 
         $token = Configuration::get('flagship_api_token');
         $url = $this->getBaseUrl();
-        $flagship = new Flagship($token, $url, 'Prestashop', _PS_VERSION_);
+        $flagship = new FlagshipApiClient($token, $url, 'Prestashop', _PS_VERSION_);
         $payload = $this->getPayload($address);
 
         if (!isset(Context::getContext()->cookie->rates)) {
-            $storeName = $this->context->shop->name;
             $this->logger->logDebug("Quotes payload: ".json_encode($payload));
-            $rates = $flagship->createQuoteRequest($payload)->setStoreName($storeName)->execute()->sortByPrice();
+            $rates = $flagship->createQuote($payload);
+            if(empty($this->validateResponse($rates))) { return false; }
+            usort($rates, fn($a, $b) => $b['price']['subtotal'] <=> $a['price']['subtotal']);
             Context::getContext()->cookie->rates = 1;
             $ratesArray = $this->prepareRates($rates);
             $str = $this->getRatesString($ratesArray);
@@ -372,6 +343,7 @@ class FlagshipShipping extends CarrierModule
 
         if (count($rows) == 0) {
             $boxes = 'No boxes set';
+
             return $boxes;
         }
 
@@ -397,6 +369,7 @@ class FlagshipShipping extends CarrierModule
         if (empty($shipmentId)) {
             return null;
         }
+
         return $shipmentId[0]['flagship_shipment_id'];
     }
 
@@ -433,22 +406,30 @@ class FlagshipShipping extends CarrierModule
         $helper = new HelperForm();
 
         $helper->show_toolbar = false;
-        $helper->table = $this->table;
+        $helper->table = 'flagship_boxes';
         $helper->module = $this;
-        $helper->default_form_language = $this->context->language->id;
-        $helper->allow_employee_form_lang = Configuration::get('PS_BO_ALLOW_EMPLOYEE_FORM_LANG', 0);
+        $helper->identifier = 'id_flagship_boxes';
+        $helper->submit_action = 'submitFlagshipBox';
 
-        $helper->identifier = $this->identifier;
-        $helper->submit_action = 'submitflagshipshippingBoxModule';
         $helper->currentIndex = $this->context->link->getAdminLink('AdminModules', false)
-            .'&configure='.$this->name.'&tab_module='.$this->tab.'&module_name='.$this->name;
+            .'&configure='.$this->name
+            .'&tab_module='.$this->tab
+            .'&module_name='.$this->name;
+
         $helper->token = Tools::getAdminTokenLite('AdminModules');
 
-        $helper->tpl_vars = array(
-            'fields_value' => $this->getConfigFormValues(), /* Add values for your inputs */
+        $helper->tpl_vars = [
+            'fields_value' => [
+                'model'      => '',
+                'length'     => '',
+                'width'      => '',
+                'height'     => '',
+                'weight'     => '',
+                'max_weight' => '',
+            ],
             'languages' => $this->context->controller->getLanguages(),
             'id_language' => $this->context->language->id,
-        );
+        ];
 
         return $helper->generateForm([$this->getBoxesForm()]);
     }
@@ -457,6 +438,7 @@ class FlagshipShipping extends CarrierModule
     {
         $units = Configuration::get("PS_DIMENSION_UNIT");
         $units .= ",".Configuration::get("PS_WEIGHT_UNIT");
+
         return $units;
     }
 
@@ -531,6 +513,7 @@ class FlagshipShipping extends CarrierModule
         if ($total<1) {
             $total = 1;
         }
+
         return $total;
     }
 
@@ -539,12 +522,10 @@ class FlagshipShipping extends CarrierModule
         if (Configuration::get('PS_WEIGHT_UNIT') === 'kg') {
             return 'metric';
         }
+
         return 'imperial';
     }
 
-    /**
-     * Create the structure of your form.
-     */
     protected function getConfigForm() : array
     {
         return [
@@ -706,37 +687,37 @@ class FlagshipShipping extends CarrierModule
                     [
                         'col' => 4,
                         'type' => 'text',
-                        'name' => 'flagship_box_model',
+                        'name' => 'model',
                         'label' => $this->l('Box Model'),
                     ],
                     [
                         'col' => 4,
                         'type' => 'text',
-                        'name' => 'flagship_box_length',
+                        'name' => 'length',
                         'label' => $this->l('Length'),
                     ],
                     [
                         'col' => 4,
                         'type' => 'text',
-                        'name' => 'flagship_box_width',
+                        'name' => 'width',
                         'label' => $this->l('Width'),
                     ],
                     [
                         'col' => 4,
                         'type' => 'text',
-                        'name' => 'flagship_box_height',
+                        'name' => 'height',
                         'label' => $this->l('Height'),
                     ],
                     [
                         'col' => 4,
                         'type' => 'text',
-                        'name' => 'flagship_box_weight',
+                        'name' => 'weight',
                         'label' => $this->l('Weight'),
                     ],
                     [
                         'col' => 4,
                         'type' => 'text',
-                        'name' => 'flagship_box_max_weight',
+                        'name' => 'max_weight',
                         'label' => $this->l('Max Weight'),
                     ]
                 ],
@@ -803,15 +784,18 @@ class FlagshipShipping extends CarrierModule
 
         }
 
-        if ($this->setApiToken($apiToken, $testEnv) && $this->setMarkup($markup) && $this->setHandlingFee($fee) && $this->setTestEnv($testEnv) && $this->setResidential($residential) && $this->setEmailOnLabel($emailOnLabel)) {
-            $storeName = $this->context->shop->name;
+        if ($this->setApiToken($apiToken, $testEnv) && $this->setMarkup($markup) 
+            && $this->setHandlingFee($fee) && $this->setTestEnv($testEnv) 
+            && $this->setResidential($residential) && $this->setEmailOnLabel($emailOnLabel)) {
+
             $url = $this->getBaseUrl();
-            $flagship = new Flagship($apiToken, $url, 'Prestashop', _PS_VERSION_);
-            $availableServices = $flagship->availableServicesRequest()->setStoreName($storeName)->execute();
+            $flagship = new FlagshipApiClient($apiToken, $url, 'Prestashop', _PS_VERSION_);
+            $availableServices = $flagship->getAvailableServices();
             $this->prepareCarriers($availableServices);
 
             return $this->displayConfirmation($this->l('FlagShip Configured'));
         }
+        
         return $this->displayWarning($this->l("Oops! Token is invalid or same token is set."));
     }
 
@@ -841,18 +825,20 @@ class FlagshipShipping extends CarrierModule
     }
 
     protected function prepareCarriers($availableServices) : int {
-        foreach ($availableServices as $availableService) {
-            $carrier = $this->addCarrier($availableService);
-            $this->addZones($carrier);
-            $this->addGroups($carrier);
-            $this->addRanges($carrier);
+        foreach ($availableServices as $key => $services) {
+            foreach ($services as $availableService) {
+                $carrier = $this->addCarrier($key, $availableService);
+                $this->addZones($carrier);
+                $this->addGroups($carrier);
+                $this->addRanges($carrier);
+            }
         }
+
         return 0;
     }
 
     protected function getBaseUrl() : string {
-        $baseUrl = Configuration::get('flagship_test_env') == 1 ? SMARTSHIP_TEST_API_URL : SMARTSHIP_API_URL;
-        return $baseUrl;
+        return Configuration::get('flagship_test_env') == 1 ? SMARTSHIP_TEST_API_URL : SMARTSHIP_API_URL;
     }
 
     protected function setResidential(string $residential) : int {
@@ -873,9 +859,9 @@ class FlagshipShipping extends CarrierModule
 
     protected function insertBoxDetails() : string
     {
-        $length = Tools::getValue('flagship_box_length');
-        $width = Tools::getValue('flagship_box_width');
-        $height = Tools::getValue('flagship_box_height');
+        $length = Tools::getValue('length');
+        $width = Tools::getValue('width');
+        $height = Tools::getValue('height');
 
         $girth = 2*$width + 2*$height;
         if ($this->getWeightUnits() == 'imperial' && ($length + $girth > 165) ||
@@ -885,12 +871,12 @@ class FlagshipShipping extends CarrierModule
         }
 
         $data = [
-            "model" => Tools::getValue('flagship_box_model'),
-            "length" => Tools::getValue('flagship_box_length'),
-            "width" => Tools::getValue('flagship_box_width'),
-            "height" => Tools::getValue('flagship_box_height'),
-            "weight" => Tools::getValue('flagship_box_weight'),
-            "max_weight" => Tools::getValue('flagship_box_max_weight')
+            "model" => Tools::getValue('model'),
+            "length" => Tools::getValue('length'),
+            "width" => Tools::getValue('width'),
+            "height" => Tools::getValue('height'),
+            "weight" => Tools::getValue('weight'),
+            "max_weight" => Tools::getValue('max_weight')
         ];
 
         Db::getInstance()->insert('flagship_boxes', $data);
@@ -928,9 +914,9 @@ class FlagshipShipping extends CarrierModule
         return Configuration::updateValue('flagship_fee', $fee);
     }
 
-    protected function setMarkup(string $markup) : int
+    protected function setMarkup(string $markup) : bool
     {
-        return Configuration::updateValue('flagship_markup', $markup);
+        return !empty($markup) ? Configuration::updateValue('flagship_markup', $markup) : true;
     }
 
     protected function isCurrentTokenSame(string $token) : bool
@@ -946,18 +932,13 @@ class FlagshipShipping extends CarrierModule
     {
         $url = $testEnv == 1 ? SMARTSHIP_TEST_API_URL : SMARTSHIP_API_URL;
 
-        $flagship = new Flagship($token, $url, 'Prestashop', _PS_VERSION_); //storeName
-        try {
-            $storeName = $this->context->shop->name;
-            $checkTokenRequest = $flagship->validateTokenRequest($token)->setStoreName($storeName);
-            $checkTokenRequest->execute();
-            return true;
-        } catch (Exception $e) {
-            return false;
-        }
+        $flagship = new FlagshipApiClient($token, $url, 'Prestashop', _PS_VERSION_); //storeName
+        
+        return $flagship->validateToken($token);
+        
     }
 
-    protected function setApiToken(string $apiToken, int $testEnv) : string
+    protected function setApiToken(string $apiToken, int $testEnv)
     {
         if (!$this->verifyToken($apiToken, $testEnv)) {
             return false;
@@ -966,38 +947,38 @@ class FlagshipShipping extends CarrierModule
         return true;
     }
 
-    protected function prepareRates(\Flagship\Shipping\Collections\RatesCollection $rates) : array
+    protected function prepareRates($rates) : array
     {
         $ratesArray = [];
         foreach ($rates as $rate) {
             $ratesArray[] = [
-                "courier" => $rate->getCourierName() == 'FedEx' ?
-                    'FedEx '.$rate->getCourierDescription() :
-                    $rate->getCourierDescription(),
-                "subtotal" => $rate->getSubtotal(),
-                "taxes" => $rate->getTaxesTotal()
+                "courier" => $rate['service']['courier_name'] == 'FedEx' ?
+                    'FedEx '.$rate['service']['courier_desc'] :
+                    $rate['service']['courier_desc'],
+                "subtotal" => $rate['price']['subtotal'],
+                "taxes" => array_sum(array_values($rate['price']['taxes']))
             ];
         }
         return $ratesArray;
     }
 
     protected function getCourierImage(
-        \Flagship\Shipping\Objects\Service $availableService,
+        $availableService,
         string $courier,
         string $img
     ) : string {
-        if (stripos($availableService->getDescription(), $courier) === 0) {
+        if (stripos($availableService['courier_description'], $courier) === 0) {
             return Tools::strtolower($courier);
         }
         return $img;
     }
 
-    protected function addCarrier(\Flagship\Shipping\Objects\Service $availableService) //Mixed return type
+    protected function addCarrier($courier, $availableService) //Mixed return type
     {
 
         $carrier = new Carrier();
 
-        $carrier->name = $this->l($availableService->getDescription());
+        $carrier->name = $this->l($availableService['courier_description']);
         $carrier->is_module = true;
         $carrier->active = 1;
         $carrier->range_behavior = 1;
@@ -1006,14 +987,8 @@ class FlagshipShipping extends CarrierModule
         $carrier->range_behavior = 0;
         $carrier->external_module_name = $this->name;
         $carrier->shipping_method = 2;
-        $img = 'fedex';
-
-        $couriers = ['canpar','ups','purolator','dhl','gls','nationex'];
-
-        foreach ($couriers as $courier) {
-            $img = $this->getCourierImage($availableService, $courier, $img);
-        }
-
+        $img = $courier;
+        
         foreach (Language::getLanguages() as $lang) {
             $carrier->delay[$lang['id_lang']] = $this->l('Contact FlagShip');
         }
@@ -1163,36 +1138,35 @@ class FlagshipShipping extends CarrierModule
 
         $token = Configuration::get('flagship_api_token');
         $url = $this->getBaseUrl();
-        $flagship = new Flagship($token, $url, 'Prestashop', _PS_VERSION_);
+        $flagship = new FlagshipApiClient($token, $url, 'Prestashop', _PS_VERSION_);
         $packingPayload = [
             'items' => $items,
             'boxes' => $boxes,
             'units' => "imperial"
         ];
 
-        try{
-            $this->logger->logDebug("Packing payload: ".json_encode($packingPayload));
-            $packings = $flagship->packingRequest($packingPayload)->execute();
-            $this->logger->logDebug("Packing response: ".json_encode($packings));
-            $packedItems = $this->getPackedItems($packings);
-
-            $packages = [
-                "items" => $packedItems,
-                "units" => "imperial",
-                "type"  => "package",
-                "content" => "goods"
-            ];
-
-            return $packages;
-        } catch (PackingException $e) {
-            $this->logger->logError("Error packing items: ".$e->getMessage());
+        $this->logger->logDebug("Packing payload: ".json_encode($packingPayload));
+        $packings = $flagship->packingRequest($packingPayload);
+        if(empty($this->validateResponse($packings))) {
+            $this->logger->logError("Error packing items: $packings");
             Cache::store('packagesCount', 0);
             return [];
         }
+        $this->logger->logDebug("Packing response: ".json_encode($packings));
+        $packedItems = $this->getPackedItems($packings);
+
+        $packages = [
+            "items" => $packedItems,
+            "units" => "imperial",
+            "type"  => "package",
+            "content" => "goods"
+        ];
+
+        return $packages;
         
     }
 
-    protected function getPackedItems(\Flagship\Shipping\Collections\PackingCollection $packings) : array
+    protected function getPackedItems($packings) : array
     {
         if ($packings == null) {
             return [
@@ -1230,6 +1204,7 @@ class FlagshipShipping extends CarrierModule
                 "description"=>is_null($order) ? $product["name"] : $product["product_name"]
             ];
         }
+
         return $items;
     }
 
@@ -1242,6 +1217,7 @@ class FlagshipShipping extends CarrierModule
         if(!Configuration::get('flagship_packing_api') || 0 == $dimension ) {
             $dimension = max(ceil($dimension),1);
         }
+
         return $dimension;
     }
 
@@ -1255,6 +1231,7 @@ class FlagshipShipping extends CarrierModule
         if(!Configuration::get('flagship_packing_api') || 0 == $weight) {
             $weight = max(ceil($weight),1);
         }
+
         return $weight;
     }
 
@@ -1270,20 +1247,25 @@ class FlagshipShipping extends CarrierModule
     protected function getShipment(int $shipmentId) : array {
         $token = Configuration::get('flagship_api_token');
         $url = $this->getBaseUrl();
-        $flagship = new Flagship($token, $url, 'Prestashop', _PS_VERSION_);
-        try{
-            $request = $flagship->getShipmentByIdRequest($shipmentId);
-            return (array)$request->execute();
-        } catch (GetShipmentByIdException $e) {
-            $this->logger->logError("Error getting shipment: ".$e->getMessage());
-            return [];
-        }
+        $flagship = new FlagshipApiClient($token, $url, 'Prestashop', _PS_VERSION_);
+        $shipment = $flagship->getShipmentById($shipmentId);
         
+        return $this->validateResponse($shipment);
+    }
+
+    private function validateResponse($response) {
+        if (is_string($response)) {
+            $this->logger->logError("Error response from Flagship API: ".$response);
+        
+            return [];
+        } 
+
+        return $response;   
     }
 
     protected function getTrackingUrl($shipment) : string {
-        $courier = $shipment['shipment']->service->courier_name;
-        $trackingNumber = $shipment['shipment']->tracking_number;
+        $courier = $shipment['service']['courier_name'];
+        $trackingNumber = $shipment['tracking_number'];
         switch ($courier) {
             case 'purolator':
                 $url = 'https://eshiponline.purolator.com/ShipOnline/Public/Track/TrackingDetails.aspx?pup=Y&pin='.$trackingNumber.'&lang=E';

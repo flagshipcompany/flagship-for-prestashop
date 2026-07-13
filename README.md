@@ -9,16 +9,16 @@ NOTE: FlagShip for Prestashop requires you to increase PHP upload_max_filesize t
 
 We recommend using the latest version of PHP. The minimum requirement is the same version of PHP that your Prestashop installation supports.
 
-| Prestashop     | PHP | 
-|----------------|-----|
-| 1.7.x          | 7.4 |
-| 8.0.x          | 8.0 |
+| Prestashop     | PHP  | Flagship-for-prestshop |
+|----------------|----- |------------------------|
+| 1.7.x          | 7.4  | 1.0.x                  |
+| 8.0.x          | 8.0  | 1.0.x                  |
+| 9.0.x          | 8.1+ | 2.0.x                  |
 
 # Compatibility and support
 
-Compatible with PrestaShop 1.7.x and Prestashop 8. In case of any issues, please send an email to developers@flagshipcompany.com
+Compatible with PrestaShop 1.7.x, Prestashop 8 and Prestashop 9. In case of any issues, please send an email to developers@flagshipcompany.com
 
-#### Please note that this module does not support Prestashop 9
 
 # Installation
 
@@ -30,12 +30,7 @@ Modules > Module Manager > Upload a module (top right)
 
 Upload flagship-for-prestashop.zip provided above
 
-## Composer
 
-````
-cd <PATH_TO_PRESTASHOP_INSTALLATION_DIR>/modules
-composer create-project flagshipcompany/flagship-for-prestashop flagshipshipping
-````
 ## Manual
 Download the module from github, unzip the archive and move it to @Prestashop/modules/.
 
