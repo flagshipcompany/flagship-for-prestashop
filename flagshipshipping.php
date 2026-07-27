@@ -44,12 +44,13 @@ class FlagshipShipping extends CarrierModule
     public $id_carrier;
     protected $config_form = false;
     public $url;
+    protected $logger;
 
     public function __construct()
     {
         $this->name = 'flagshipshipping';
         $this->tab = 'shipping_logistics';
-        $this->version = '2.0.0';
+        $this->version = '2.0.1';
         $this->author = 'FlagShip Courier Solutions';
         $this->need_instance = 0;
         $this->url = SMARTSHIP_WEB_URL;
@@ -122,6 +123,15 @@ class FlagshipShipping extends CarrierModule
         Configuration::deleteByName('flagship_residential');
         Configuration::deleteByName('flagship_test_env');
         Configuration::deleteByName('flagship_email_on_label');
+        Configuration::deleteByName('flagship_postal_code');
+        Configuration::deleteByName('flagship_city');
+        Configuration::deleteByName('flagship_state');
+        Configuration::deleteByName('flagship_attn');
+        Configuration::deleteByName('flagship_name');
+        Configuration::deleteByName('flagship_phone');
+        Configuration::deleteByName('flagship_phone_ext');
+        Configuration::deleteByName('flagship_addr');
+        Configuration::deleteByName('flagship_suite');
 
         $query = new DbQuery();
         $query->select('*')->from('flagship_shipping');
@@ -445,15 +455,15 @@ class FlagshipShipping extends CarrierModule
     protected function getPayloadForShipment(int $orderId) : array
     {
         $from = [
-            "name"=>substr(Configuration::get('PS_SHOP_NAME'),0,29),
-            "attn"=>substr(Configuration::get('PS_SHOP_NAME'),0,20),
-            "address"=>substr(Configuration::get('PS_SHOP_ADDR1'),0,29),
-            "suite"=>substr(Configuration::get('PS_SHOP_ADDR2'),0,17),
-            "city"=>Configuration::get('PS_SHOP_CITY'),
+            "name"=>substr(Configuration::get('flagship_name'),0,29),
+            "attn"=>substr(Configuration::get('flagship_attn'),0,20),
+            "address"=>substr(Configuration::get('flagship_addr'),0,29),
+            "suite"=>substr(Configuration::get('flagship_suite'),0,17),
+            "city"=>Configuration::get('flagship_city'),
             "country"=>Country::getIsoById(Configuration::get('PS_SHOP_COUNTRY_ID')),
-            "state"=>$this->getStateCode(Configuration::get('PS_SHOP_STATE_ID')),
-            "postal_code"=>Configuration::get('PS_SHOP_CODE'),
-            "phone"=> Configuration::get('PS_SHOP_PHONE'),
+            "state"=> $this->getStateCode(Configuration::get('flagship_state')),
+            "postal_code"=>Configuration::get('flagship_postal_code'),
+            "phone"=> Configuration::get('flagship_phone'),
             "is_commercial"=>true
         ];
 
@@ -475,7 +485,7 @@ class FlagshipShipping extends CarrierModule
             "suite"=>substr($addressTo->address2,0,17),
             "city"=>$addressTo->city,
             "country"=>Country::getIsoById((int)$addressTo->id_country),
-            "state"=>$this->getStateCode((int)$addressTo->id_state),
+            "state"=> $this->getStateCode((int)$addressTo->id_state),
             "postal_code"=>$addressTo->postcode,
             "phone"=> $addressTo->phone,
             "is_commercial"=>$isCommercial
@@ -528,6 +538,9 @@ class FlagshipShipping extends CarrierModule
 
     protected function getConfigForm() : array
     {
+        $idCountry = Country::getByIso('CA');
+        $states = State::getStatesByIdCountry($idCountry);
+
         return [
             'form' =>
             [
@@ -539,25 +552,22 @@ class FlagshipShipping extends CarrierModule
                 'input' => [
                     [
                         'col' => 4,
-                        'type' => 'select',
+                        'type' => 'switch',
                         'label' => $this->l('Test Environment'),
                         'desc' =>  $this->l('Use FlagShip\'s test environment. Any shipments made in the test environment will not be shipped.'),
                         'name' => 'flagship_test_env',
-                        'options' => [
-                            'query' => [
-                                [
-                                    'key' => 0,
-                                    'name' => 'No'
-                                ],
-                                [
-                                    'key' => 1,
-                                    'name' => 'Yes'
-                                ]
+                        'values' => [
+                            [
+                                'id' => 'test_env_on',
+                                'value' => 1,
+                                'label' => $this->l('Enabled'),
                             ],
-                            'id' => 'key',
-                            'name' => 'name',
-                        ]
-
+                            [
+                                'id' => 'test_env_off',
+                                'value' => 0,
+                                'label' => $this->l('Disabled'),
+                            ],
+                        ],
                     ],
                     [
                         'col' => 4,
@@ -571,7 +581,7 @@ class FlagshipShipping extends CarrierModule
                         'col' => 4,
                         'type' => 'text',
                         'name' => 'flagship_markup',
-                        'label' =>$this->l('Percentage Markup'),
+                        'label' => $this->l('Percentage Markup'),
                         'desc' =>  $this->l('This percentage markup will be added to the rate quoted to the customer on your store front.'),
                     ],
                     [
@@ -583,94 +593,165 @@ class FlagshipShipping extends CarrierModule
                     ],
                     [
                         'col' => 4,
-                        'type' => 'select',
+                        'type' => 'switch',
                         'label' => $this->l('Use Packing Api'),
                         'name' => 'flagship_packing_api',
                         'desc' =>  $this->l('If enabled, an algorithm will pack all products in the cart in the boxes provided below.'),
-                        'options' => [
-                            'query' => [
-                                [
-                                    'key' => 0,
-                                    'name' => 'No'
-                                ],
-                                [
-                                    'key' => 1,
-                                    'name' => 'Yes'
-                                ]
+                        'values' => [
+                            [
+                                'id' => 'packing_api_on',
+                                'value' => 1,
+                                'label' => $this->l('Enabled'),
                             ],
-                            'id' => 'key',
-                            'name' => 'name',
+                            [
+                                'id' => 'packing_api_off',
+                                'value' => 0,
+                                'label' => $this->l('Disabled'),
+                            ],
                         ]
                     ],
                     [
                         'col' => 4,
-                        'type' => 'select',
+                        'type' => 'switch',
                         'label' => $this->l('Residential Shipments'),
                         'desc' =>  $this->l('Mark all shipments as residential'),
                         'name' => 'flagship_residential',
-                        'options' => [
-                            'query' => [
-                                [
-                                    'key' => 0,
-                                    'name' => 'No'
-                                ],
-                                [
-                                    'key' => 1,
-                                    'name' => 'Yes'
-                                ]
+                        'values' => [
+                            [
+                            'id' => 'residential_on',
+                            'value' => 1,
+                            'label' => $this->l('Enabled'),
                             ],
-                            'id' => 'key',
-                            'name' => 'name',
+                            [
+                                'id' => 'residential_off',
+                                'value' => 0,
+                                'label' => $this->l('Disabled'),
+                            ],
                         ]
                     ],
                     [
                         'col' => 4,
-                        'type' => 'select',
+                        'type' => 'switch',
                         'label' => $this->l('Use customer email as tracking'),
                         'desc' =>  $this->l('Select if you want to use customer email as tracking email'),
                         'name' => 'flagship_tracking_email',
-                        'options' => [
-                            'query' => [
-                                [
-                                    'key' => 0,
-                                    'name' => 'No'
-                                ],
-                                [
-                                    'key' => 1,
-                                    'name' => 'Yes'
-                                ]
+                        'values' => [
+                            [
+                                'id' => 'customer_email_on',
+                                'value' => 1,
+                                'label' => $this->l('Enabled'),
                             ],
-                            'id' => 'key',
-                            'name' => 'name',
+                            [
+                                'id' => 'customer_email_off',
+                                'value' => 0,
+                                'label' => $this->l('Disabled'),
+                            ],
                         ]
                     ],
                     [
                         'col' => 4,
-                        'type' => 'select',
+                        'type' => 'switch',
                         'label' => $this->l('Show customer email on shipping label'),
                         'desc' =>  $this->l('Select if you want to show customer email as reference on the shipping label'),
                         'name' => 'flagship_email_on_label',
-                        'options' => [
-                            'query' => [
-                                [
-                                    'key' => 0,
-                                    'name' => 'No'
-                                ],
-                                [
-                                    'key' => 1,
-                                    'name' => 'Yes'
-                                ]
+                        'values' => [
+                            [
+                                'id' => 'label_email_on',
+                                'value' => 1,
+                                'label' => $this->l('Enabled'),
                             ],
-                            'id' => 'key',
-                            'name' => 'name',
+                            [
+                                'id' => 'label_email_off',
+                                'value' => 0,
+                                'label' => $this->l('Disabled'),
+                            ],
                         ]
                     ],
+                    [
+                        'type' => 'html',
+                        'name' => 'separator',
+                        'html_content' => '<hr><h4>Shipping Address</h4>',
+                    ],
+                    [
+                        'col' => 4,
+                        'type' => 'text',
+                        'name' => 'flagship_postal_code',
+                        'label' => $this->l('Shipper Postal Code'),
+                        'desc' =>  $this->l('Postal code for shipper'),
+                        'required' => true,
+                    ],
+                    [
+                        'col' => 4,
+                        'type' => 'text',
+                        'name' => 'flagship_city',
+                        'label' => $this->l('Shipper City'),
+                        'desc' =>  $this->l('City for shipper'),
+                        'required' => true,
+                    ],
+                    [
+                        'type' => 'select',
+                        'name' => 'flagship_state',
+                        'label' => $this->l('Shipper Province'),
+                        'options' => [
+                            'query' => $states,
+                            'id' => 'id_state',
+                            'name' => 'name',
+                        ],
+                        'required' => true,
+                    ],
+                    [
+                        'col' => 4,
+                        'type' => 'text',
+                        'name' => 'flagship_attn',
+                        'label' => $this->l('Shipper Name'),
+                        'desc' =>  $this->l('Name of the person shipping the package'),
+                        'required' => true,
+                    ],
+                    [
+                        'col' => 4,
+                        'type' => 'text',
+                        'name' => 'flagship_name',
+                        'label' => $this->l('Shipper Company Name'),
+                        'desc' =>  $this->l('Company name for shipper'),
+                        'required' => true,
+                    ],
+                    [
+                        'col' => 4,
+                        'type' => 'text',
+                        'name' => 'flagship_phone',
+                        'label' => $this->l('Shipper Phone'),
+                        'desc' =>  $this->l('Phone number for shipper'),
+                        'required' => true,
+                    ],
+                    [
+                        'col' => 4,
+                        'type' => 'text',
+                        'name' => 'flagship_phone_ext',
+                        'label' => $this->l('Shipper Phone Extension'),
+                        'desc' =>  $this->l('Phone extension for shipper'),
+                    ],
+                    [
+                        'col' => 4,
+                        'type' => 'text',
+                        'name' => 'flagship_addr',
+                        'label' => $this->l('Shipper Street Address'),
+                        'desc' =>  $this->l('Street address for shipper'),
+                        'required' => true,
+                    ],
+                    [
+                        'col' => 4,
+                        'type' => 'text',
+                        'name' => 'flagship_suite',
+                        'label' => $this->l('Shipper Suite'),
+                        'desc' =>  $this->l('Suite number for shipper'),
+                    ]
                 ],
                 'submit' => [
                     'title' => $this->l('Save'),
                 ],
             ],
         ];
+
     }
 
     protected function getBoxesForm() : array
@@ -733,7 +814,6 @@ class FlagshipShipping extends CarrierModule
      */
     protected function getConfigFormValues() : array
     {
-        $apiToken = Configuration::get('flagship_api_token') ? Configuration::get('flagship_api_token') : '';
         return [
             'flagship_test_env' => Configuration::get('flagship_test_env'),
             'flagship_api_token' => '',
@@ -743,6 +823,15 @@ class FlagshipShipping extends CarrierModule
             'flagship_email_on_label' => Configuration::get('flagship_email_on_label'),
             'flagship_packing_api' => Configuration::get('flagship_packing_api'),
             'flagship_tracking_email' => Configuration::get('flagship_tracking_email'),
+            'flagship_postal_code' => Configuration::get('flagship_postal_code'),
+            'flagship_city' => Configuration::get('flagship_city'),
+            'flagship_state' => Configuration::get('flagship_state'),
+            'flagship_attn' => Configuration::get('flagship_attn'),
+            'flagship_name' => Configuration::get('flagship_name'),
+            'flagship_phone' => Configuration::get('flagship_phone'),
+            'flagship_phone_ext' => Configuration::get('flagship_phone_ext'),
+            'flagship_addr' => Configuration::get('flagship_addr'),
+            'flagship_suite' => Configuration::get('flagship_suite'),
         ];
     }
 
@@ -751,6 +840,7 @@ class FlagshipShipping extends CarrierModule
      */
     protected function postProcess() 
     {
+        $this->saveAddressDetails();
         $apiToken = empty(Tools::getValue('flagship_api_token')) ?
                 Configuration::get('flagship_api_token') :
                 Tools::getValue('flagship_api_token');
@@ -764,15 +854,16 @@ class FlagshipShipping extends CarrierModule
         $packing = empty(Tools::getValue('flagship_packing_api')) ? 0 : Tools::getValue('flagship_packing_api');
         $trackingEmail = empty(Tools::getValue('flagship_tracking_email')) ? 0 : Tools::getValue('flagship_tracking_email');
 
-        if (is_string(Configuration::get('flagship_fee')) && is_string(Configuration::get('flagship_api_token')) && is_string(Configuration::get('flagship_markup')) ) { //fields exist in db
+        if (is_string(Configuration::get('flagship_fee')) 
+            && is_string(Configuration::get('flagship_api_token')) 
+            && is_string(Configuration::get('flagship_markup')) ) { 
+            //fields exist in db
             $feeFlag = $fee != Configuration::get('flagship_fee') ?
                                 Configuration::updateValue('flagship_fee', $fee) : 0 ;
             $markupFlag = $markup != Configuration::get('flagship_markup') ?
                                 Configuration::updateValue('flagship_markup', $markup) : 0 ;
             $residentialFlag = $residential != Configuration::get('flagship_residential') ?
                                 Configuration::updateValue('flagship_residential', $residential) : 0 ;
-            $testEnvFlag = $testEnv != Configuration::get('flagship_test_env') ?
-                                Configuration::updateValue('flagship_test_env', $testEnv) : 0;
             $emailOnLabel = $emailOnLabel != Configuration::get('flagship_email_on_label') ?
                                 Configuration::updateValue('flagship_email_on_label', $emailOnLabel) : 0;
             $trackingEmail = $trackingEmail != Configuration::get('flagship_tracking_email') ?
@@ -799,28 +890,48 @@ class FlagshipShipping extends CarrierModule
         return $this->displayWarning($this->l("Oops! Token is invalid or same token is set."));
     }
 
+    protected function saveAddressDetails()
+    {
+        $flag = false;
+        $fields = [
+            'flagship_postal_code',
+            'flagship_city',
+            'flagship_state',
+            'flagship_attn',
+            'flagship_name',
+            'flagship_phone',
+            'flagship_phone_ext',
+            'flagship_addr',
+            'flagship_suite'
+        ];
+
+        foreach ($fields as $field) {
+            $flag = !empty(Tools::getValue($field)) ? Configuration::updateValue($field, Tools::getValue($field)) : null;
+        }
+        return $flag;
+    }
+
     protected function getReturnMessage(string $apiToken, int $testEnv, int $feeFlag, int $markupFlag, int $residentialFlag, int $emailOnLabel, int $packing) : string
     {
         $returnMessage = "<b>";
         $validToken = 0;
-        if(strcmp($apiToken,Configuration::get('flagship_api_token')) != 0 && $this->isTokenValid($apiToken, $testEnv))
-        {
+        if(strcmp($apiToken,Configuration::get('flagship_api_token')) != 0 && $this->isTokenValid($apiToken, $testEnv)) {
             $validToken = Configuration::updateValue('flagship_api_token', $apiToken);
         }
 
-        if($validToken == 1){
+        if($validToken == 1) {
             $returnMessage .= "Token Updated! ";
         }
 
-        if($validToken == 0){
+        if($validToken == 0) {
             $returnMessage .= "Token not updated! ";
         }
 
-        if($feeFlag || $markupFlag || $residentialFlag || $emailOnLabel || $packing){
+        if($feeFlag || $markupFlag || $residentialFlag || $emailOnLabel || $packing) {
             $returnMessage .= "Settings Updated";
         }
-
         $returnMessage .= "</b>";
+
         return $returnMessage;
     }
 
@@ -878,8 +989,8 @@ class FlagshipShipping extends CarrierModule
             "weight" => Tools::getValue('weight'),
             "max_weight" => Tools::getValue('max_weight')
         ];
-
         Db::getInstance()->insert('flagship_boxes', $data);
+
         return $this->displayConfirmation($this->l('Box added'));
     }
 
@@ -931,7 +1042,6 @@ class FlagshipShipping extends CarrierModule
     protected function isTokenValid(string $token, int $testEnv) : bool
     {
         $url = $testEnv == 1 ? SMARTSHIP_TEST_API_URL : SMARTSHIP_API_URL;
-
         $flagship = new FlagshipApiClient($token, $url, 'Prestashop', _PS_VERSION_); //storeName
         
         return $flagship->validateToken($token);
@@ -966,7 +1076,8 @@ class FlagshipShipping extends CarrierModule
         $availableService,
         string $courier,
         string $img
-    ) : string {
+    ) : string 
+    {
         if (stripos($availableService['courier_description'], $courier) === 0) {
             return Tools::strtolower($courier);
         }
@@ -975,9 +1086,7 @@ class FlagshipShipping extends CarrierModule
 
     protected function addCarrier($courier, $availableService) //Mixed return type
     {
-
         $carrier = new Carrier();
-
         $carrier->name = $this->l($availableService['courier_description']);
         $carrier->is_module = true;
         $carrier->active = 1;
@@ -996,8 +1105,8 @@ class FlagshipShipping extends CarrierModule
         if ($carrier->add() == true) {
             @copy(dirname(__FILE__).'/views/img/'.$img.'.png', _PS_SHIP_IMG_DIR_.'/'.(int)$carrier->id.'.jpg');
             Configuration::updateValue($this->name, (int)$carrier->id);
-
             $this->id_carrier = (int)$carrier->id;
+
             return $carrier;
         }
 
@@ -1012,6 +1121,7 @@ class FlagshipShipping extends CarrierModule
             $groups_ids[] = $group['id_group'];
         }
         $carrier->setGroups($groups_ids);
+        
         return 0;
     }
 
@@ -1038,6 +1148,7 @@ class FlagshipShipping extends CarrierModule
         foreach ($zones as $zone) {
             $carrier->addZone($zone['id_zone']);
         }
+
         return 0;
     }
 
@@ -1056,21 +1167,19 @@ class FlagshipShipping extends CarrierModule
 
     protected function getPayload(Address $address) : array
     {
-
         $from = [
-            "city"=>Configuration::get('PS_SHOP_CITY'),
-            "country"=>Country::getIsoById(Configuration::get('PS_SHOP_COUNTRY_ID')),
-            "state"=>$this->getStateCode(Configuration::get('PS_SHOP_STATE_ID')),
-            "postal_code"=>Configuration::get('PS_SHOP_CODE'),
-            "is_commercial"=>true
+            "city" => Configuration::get('flagship_city'),
+            "country" => Country::getIsoById(Configuration::get('PS_SHOP_COUNTRY_ID')),
+            "state" =>  $this->getStateCode(Configuration::get('flagship_state')),
+            "postal_code" => Configuration::get('flagship_postal_code'),
+            "is_commercial" => true
         ];
-
         $to = [
-            "city"=>$address->city,
-            "country"=>Country::getIsoById($address->id_country),
-            "state"=>$this->getStateCode($address->id_state),
-            "postal_code"=>$address->postcode,
-            "is_commercial"=> Configuration::get('flagship_residential') ? false : true
+            "city" => $address->city,
+            "country" => Country::getIsoById($address->id_country),
+            "state" =>  $this->getStateCode($address->id_state),
+            "postal_code" => $address->postcode,
+            "is_commercial" => Configuration::get('flagship_residential') ? false : true
         ];
         $packages = $this->getPackages();
 
@@ -1080,7 +1189,6 @@ class FlagshipShipping extends CarrierModule
         $options = [
             "address_correction" => true
         ];
-
         $payload = [
             "from" => $from,
             "to" => $to,
@@ -1096,7 +1204,6 @@ class FlagshipShipping extends CarrierModule
     {
         $query = new DbQuery();
         $query->select('model,length,width,height,weight,max_weight')->from('flagship_boxes');
-
         $rows = Db::getInstance()->executeS($query);
         $boxes = [];
         foreach ($rows as $row) {
@@ -1109,6 +1216,7 @@ class FlagshipShipping extends CarrierModule
                 "max_weight" => $this->getWeight($row["max_weight"])
             ];
         }
+
         return $boxes;
     }
 
@@ -1117,7 +1225,6 @@ class FlagshipShipping extends CarrierModule
         $products = is_null($order) ? Context::getContext()->cart->getProducts() : $order->getProductsDetail();
         $packages = [];
         $items = [];
-
         $boxes = $this->getBoxes();
 
         foreach ($products as $product) {
@@ -1125,7 +1232,8 @@ class FlagshipShipping extends CarrierModule
             $items = $this->getItemsByQty($product, $order, $items);
         }
 
-        if(!Configuration::get('flagship_packing_api') || count($boxes) == 0){ //use items as they are if boxes are not set
+        //use items as they are if boxes are not set
+        if(!Configuration::get('flagship_packing_api') || count($boxes) == 0) { 
             $temp = $items;
 
             return [
@@ -1152,9 +1260,7 @@ class FlagshipShipping extends CarrierModule
             Cache::store('packagesCount', 0);
             return [];
         }
-        $this->logger->logDebug("Packing response: ".json_encode($packings));
-        $packedItems = $this->getPackedItems($packings);
-
+        $packedItems = $this->getPackedItems($packings['packages']);
         $packages = [
             "items" => $packedItems,
             "units" => "imperial",
@@ -1180,11 +1286,11 @@ class FlagshipShipping extends CarrierModule
 
         foreach ($packings as $packing) {
             $packedItems[] = [
-                'length' => $packing->getLength(),
-                'width' => $packing->getWidth(),
-                'height' => $packing->getHeight(),
-                'weight' => max($packing->getWeight(),1),
-                'description' => $packing->getBoxModel()
+                'length' => $packing['length'],
+                'width' => $packing['width'],
+                'height' => $packing['height'],
+                'weight' => max($packing['weight'],1),
+                'description' => $packing['box_model']
             ];
         }
 
@@ -1194,7 +1300,6 @@ class FlagshipShipping extends CarrierModule
     protected function getItemsByQty($product, $order, $items) : array
     {
         $qty = is_null($order) ? $product["quantity"] : $product["product_quantity"];
-
         for ($i=0; $i < $qty; $i++) {
             $items[] = [
                 "width"  => $this->getDimension($product["width"]),
@@ -1241,6 +1346,7 @@ class FlagshipShipping extends CarrierModule
             "id_order" => $orderId,
             "flagship_shipment_id" => $shipmentId
         ];
+
         return Db::getInstance()->insert('flagship_shipping', $data);
     }
 
@@ -1258,7 +1364,8 @@ class FlagshipShipping extends CarrierModule
             $this->logger->logError("Error response from Flagship API: ".$response);
         
             return [];
-        } 
+        }
+        $this->logger->logInfo("API response from Flagship: ".json_encode($response));
 
         return $response;   
     }
@@ -1295,6 +1402,7 @@ class FlagshipShipping extends CarrierModule
                 $url = "https://www.flagshipcompany.com/log-in/";
                 break;
         }
+        
         return $url;
     }
 
