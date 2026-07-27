@@ -13,6 +13,7 @@ We recommend using the latest version of PHP. The minimum requirement is the sam
 |----------------|----- |------------------------|
 | 1.7.x          | 7.4  | 1.0.x                  |
 | 8.0.x          | 8.0  | 1.0.x                  |
+| 8.2.x          | 8.0  | 2.0.x                  |
 | 9.0.x          | 8.1+ | 2.0.x                  |
 
 # Compatibility and support
